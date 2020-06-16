@@ -3,6 +3,12 @@ from discord.ext import commands
 import discord
 from datetime import datetime
 import random
+from PIL import Image
+from PIL import ImageDraw
+from PIL import ImageFont
+import numpy
+import io
+
 
 class Lobby(commands.Cog):
 
@@ -21,7 +27,6 @@ class Lobby(commands.Cog):
         embed.add_field(name='?join', value='Joins the lobby', inline=False)
         embed.add_field(name='?leave', value='Leaves the lobby', inline=False)
         embed.add_field(name='?lobby', value='Views the lobby', inline=False)
-        embed.add_field(name='?order66', value='Executes the order to begin the chaos', inline=False)
         embed.add_field(name='?ready', value='Readies your user', inline=False)
         embed.add_field(name='?unready', value='Unreadies your user', inline=False)
         embed.add_field(name='?shuffle', value='Creates a randomly shuffled set of teams with the given lobby.', inline=False)
@@ -61,18 +66,6 @@ class Lobby(commands.Cog):
         return
 
     @commands.command()
-    async def order66(self, ctx):
-        if self.isReady():
-            message = '@here Game is starting! \n'
-            self.isStarted = True
-            await ctx.send(message + self.getPlayerList())
-        if self.isFull():
-            await ctx.send("The game is full but not everyone is ready")
-        else:
-            await ctx.send('There are not enough players in the game')
-        return
-
-    @commands.command()
     async def ready(self, ctx):
         player = Player(ctx.author)
         if not(player in self.players):
@@ -106,7 +99,6 @@ class Lobby(commands.Cog):
         if (len(self.players) < 2):
             await ctx.send('LFD2 Bot needs at least two players in the lobby to shuffle teams.')
             return
-        msg = ''
         # Prepare Random Team
         t = self.players.copy()
         random.shuffle(t)
@@ -117,12 +109,9 @@ class Lobby(commands.Cog):
             if len(t) == 0:
                 break
             t2.append(t.pop())
-        if len(t1) and len(t2):    
-            msg += "----- Team 1 -----" + "\n"
-            msg += self.getTeamList(t1)
-            msg += "----- Team 2 -----" + "\n"
-            msg += self.getTeamList(t2)
-            await ctx.send(msg)
+        composite = await self.getTeamComposite(t1, t2)
+        composite.save('composite.png')
+        await ctx.send(file=discord.File('composite.png'))
 
     # Resets the entire lobby
     @commands.command()
@@ -180,6 +169,49 @@ class Lobby(commands.Cog):
             if p.isReady():
                 count+=1
         return count
+
+    async def getTeamComposite(self, t1, t2):
+        survivors = [
+            'coach_small.png',
+            'ellis_small.jpeg',
+            'nick_small.png',
+            'rochelle_small.png'
+        ]
+        im = Image.open("assets/lobby.png")
+        infected_image = Image.open('assets/infected_small.png')
+        draw = ImageDraw.Draw(im)
+        textPos = (255, 180)
+        textOffset = 42
+        teamOffset = (-72, -11)
+        profileOffset = (-29, -3)
+        font = ImageFont.truetype("assets/Futurot.ttf", 16)
+
+        for p in t1:
+            # Get survivor image and next image positions
+            survivor_image = Image.open('assets/' + survivors.pop())
+            profile_image = await p.getAvatar()
+            nextTeamPos = tuple(numpy.add(textPos, teamOffset))
+            nextProfilePos = tuple(numpy.add(textPos, profileOffset))
+            # Write Player Data to Image
+            draw.text(textPos, p.getName(), font=font, fill=(81, 81, 81, 255))
+            im.paste(survivor_image, nextTeamPos)
+            im.paste(profile_image.resize((20,20)), nextProfilePos)
+            # Increment text position for next iteration
+            textPos = (textPos[0], textPos[1] + textOffset)
+
+        for p in t2:
+            # Get survivor image and next image positions
+            profile_image = await p.getAvatar()
+            nextTeamPos = tuple(numpy.add(textPos, teamOffset))
+            nextProfilePos = tuple(numpy.add(textPos, profileOffset))
+            # Write Player Data to Image
+            draw.text(textPos, p.getName(), font=font, fill=(81, 81, 81, 255))
+            im.paste(infected_image, nextTeamPos)
+            im.paste(profile_image.resize((20,20)), nextProfilePos)
+            # Increment text position for next iteration
+            textPos = (textPos[0], textPos[1] + textOffset)
+
+        return im
 
 def setup(bot):
     print('Setting up Setup cog..')

@@ -1,11 +1,11 @@
 
 import discord
 from pprint import pprint
-
+from PIL import Image
+import io
 
 class Player():
     def __init__(self, member: discord.Member):
-        print(member)
         self.member = member
         self.ready = False
 
@@ -25,6 +25,11 @@ class Player():
 
     def setUnready(self):
         self.ready = False
+
+    async def getAvatar(self):
+        #TODO Cache these byte objects in database
+        byteObject = await self.member.avatar_url_as(static_format="png", size=1024).read()
+        return Image.open(io.BytesIO(byteObject))
 
     def __eq__(self, other):
         if (isinstance(other, Player)):

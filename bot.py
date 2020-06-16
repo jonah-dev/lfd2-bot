@@ -4,7 +4,7 @@ import cogs
 from discord.ext import commands
 from collections import deque
 from datetime import datetime
-from cogs.Player import Player
+from models.Player import Player
 import random
 
 class LFD2Bot(commands.Bot):
