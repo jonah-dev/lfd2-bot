@@ -3,6 +3,11 @@ from discord.ext import commands
 import discord
 from datetime import datetime
 import random
+from PIL import Image
+from PIL import ImageDraw
+from PIL import ImageFont
+import numpy
+
 
 class Lobby(commands.Cog):
 
@@ -21,7 +26,6 @@ class Lobby(commands.Cog):
         embed.add_field(name='?join', value='Joins the lobby', inline=False)
         embed.add_field(name='?leave', value='Leaves the lobby', inline=False)
         embed.add_field(name='?lobby', value='Views the lobby', inline=False)
-        embed.add_field(name='?order66', value='Executes the order to begin the chaos', inline=False)
         embed.add_field(name='?ready', value='Readies your user', inline=False)
         embed.add_field(name='?unready', value='Unreadies your user', inline=False)
         embed.add_field(name='?shuffle', value='Creates a randomly shuffled set of teams with the given lobby.', inline=False)
@@ -58,18 +62,6 @@ class Lobby(commands.Cog):
             await ctx.send(self.getPlayerList())
         else:
             await ctx.send('There are no players in the game')
-        return
-
-    @commands.command()
-    async def order66(self, ctx):
-        if self.isReady():
-            message = '@here Game is starting! \n'
-            self.isStarted = True
-            await ctx.send(message + self.getPlayerList())
-        if self.isFull():
-            await ctx.send("The game is full but not everyone is ready")
-        else:
-            await ctx.send('There are not enough players in the game')
         return
 
     @commands.command()
@@ -117,6 +109,8 @@ class Lobby(commands.Cog):
             if len(t) == 0:
                 break
             t2.append(t.pop())
+        composite = self.getTeamComposite((t1, t2))
+        #TODO Send composite to channel!
         if len(t1) and len(t2):    
             msg += "----- Team 1 -----" + "\n"
             msg += self.getTeamList(t1)
@@ -180,6 +174,41 @@ class Lobby(commands.Cog):
             if p.isReady():
                 count+=1
         return count
+
+    def getTeamComposite(self, teams):
+        t1, t2 = teams
+        
+        survivors = [
+            'coach_small.png',
+            'ellis_small.jpeg',
+            'nick_small.png',
+            'rochelle_small.png'
+        ]
+        im = Image.open("assets/lobby.png")
+        infected_image = Image.open('assets/infected_small.png')
+        draw = ImageDraw.Draw(im)
+        textPos = (255, 180)
+        textOffset = 42
+        teamOffset = (-72, -11)
+        font = ImageFont.truetype("assets/Futurot.ttf", 16)
+
+        for p in t1:
+            draw.text(textPos, p, font=font, fill=(81, 81, 81, 255))
+            survivor_image = Image.open('assets/' + survivors.pop())
+            nextTeamPos = tuple(numpy.add(textPos, teamOffset))
+            im.paste(survivor_image, nextTeamPos)
+            textPos = (textPos[0], textPos[1] + textOffset)
+
+        for p in t2:
+            draw.text(textPos, p, font=font, fill=(81, 81, 81, 255))
+            nextTeamPos = tuple(numpy.add(textPos, teamOffset))
+            im.paste(infected_image, nextTeamPos)
+            textPos = (textPos[0], textPos[1] + textOffset)
+
+
+        im.save('testComposite.png')
+
+        return im
 
 def setup(bot):
     print('Setting up Setup cog..')
