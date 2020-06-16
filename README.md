@@ -27,7 +27,7 @@ Eventually I'll get a setup.py configured for all dependencies
 
 `reload` - will reload the lobby cog without having to restart the bot. This is incredibly useful but will clear any variables within that cog
 
-`disconnect` - kills the bot
+`disconnect` - kills the bot **note: It's best to add some sort of unique identifier in `bot.py` to make sure not to kill anyone elses bot**
 
 
 
