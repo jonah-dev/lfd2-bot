@@ -26,7 +26,7 @@ class Player():
     def setUnready(self):
         self.ready = False
 
-    async def getAvatarUrl(self):
+    async def getAvatar(self):
         #TODO Cache these byte objects in database
         byteObject = await self.member.avatar_url_as(static_format="png", size=1024).read()
         return Image.open(io.BytesIO(byteObject))

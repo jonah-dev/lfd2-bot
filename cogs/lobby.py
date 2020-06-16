@@ -7,6 +7,7 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 import numpy
+import io
 
 
 class Lobby(commands.Cog):
@@ -98,7 +99,6 @@ class Lobby(commands.Cog):
         if (len(self.players) < 2):
             await ctx.send('LFD2 Bot needs at least two players in the lobby to shuffle teams.')
             return
-        msg = ''
         # Prepare Random Team
         t = self.players.copy()
         random.shuffle(t)
@@ -109,14 +109,9 @@ class Lobby(commands.Cog):
             if len(t) == 0:
                 break
             t2.append(t.pop())
-        composite = self.getTeamComposite((t1, t2))
-        #TODO Send composite to channel!
-        if len(t1) and len(t2):    
-            msg += "----- Team 1 -----" + "\n"
-            msg += self.getTeamList(t1)
-            msg += "----- Team 2 -----" + "\n"
-            msg += self.getTeamList(t2)
-            await ctx.send(msg)
+        composite = await self.getTeamComposite(t1, t2)
+        composite.save('composite.png')
+        await ctx.send(file=discord.File('composite.png'))
 
     # Resets the entire lobby
     @commands.command()
@@ -175,9 +170,7 @@ class Lobby(commands.Cog):
                 count+=1
         return count
 
-    def getTeamComposite(self, teams):
-        t1, t2 = teams
-        
+    async def getTeamComposite(self, t1, t2):
         survivors = [
             'coach_small.png',
             'ellis_small.jpeg',
@@ -190,23 +183,33 @@ class Lobby(commands.Cog):
         textPos = (255, 180)
         textOffset = 42
         teamOffset = (-72, -11)
+        profileOffset = (-29, -3)
         font = ImageFont.truetype("assets/Futurot.ttf", 16)
 
         for p in t1:
-            draw.text(textPos, p, font=font, fill=(81, 81, 81, 255))
+            # Get survivor image and next image positions
             survivor_image = Image.open('assets/' + survivors.pop())
+            profile_image = await p.getAvatar()
             nextTeamPos = tuple(numpy.add(textPos, teamOffset))
+            nextProfilePos = tuple(numpy.add(textPos, profileOffset))
+            # Write Player Data to Image
+            draw.text(textPos, p.getName(), font=font, fill=(81, 81, 81, 255))
             im.paste(survivor_image, nextTeamPos)
+            im.paste(profile_image.resize((20,20)), nextProfilePos)
+            # Increment text position for next iteration
             textPos = (textPos[0], textPos[1] + textOffset)
 
         for p in t2:
-            draw.text(textPos, p, font=font, fill=(81, 81, 81, 255))
+            # Get survivor image and next image positions
+            profile_image = await p.getAvatar()
             nextTeamPos = tuple(numpy.add(textPos, teamOffset))
+            nextProfilePos = tuple(numpy.add(textPos, profileOffset))
+            # Write Player Data to Image
+            draw.text(textPos, p.getName(), font=font, fill=(81, 81, 81, 255))
             im.paste(infected_image, nextTeamPos)
+            im.paste(profile_image.resize((20,20)), nextProfilePos)
+            # Increment text position for next iteration
             textPos = (textPos[0], textPos[1] + textOffset)
-
-
-        im.save('testComposite.png')
 
         return im
 

@@ -39,12 +39,14 @@ composite = None
 # t1, t2 = teams
 im = Image.open("assets/lobby.png")
 infected_image = Image.open('assets/infected_small.png')
+placeholder_profile = Image.open('assets/placeholder_profile_small.png')
 draw = ImageDraw.Draw(im)
 profilePos = (184, 171)
 teamPos = (227, 180)
 textPos = (255, 180)
 textOffset = 42
 teamOffset = (-72, -11)
+profileOffset = (-29, -3)
 textColor = '#e4e4e4'
 font = ImageFont.truetype("assets/Futurot.ttf", 16)
 
@@ -52,13 +54,17 @@ for p in t1:
     draw.text(textPos, p, font=font, fill=(81, 81, 81, 255))
     survivor_image = Image.open('assets/' + survivors.pop())
     nextTeamPos = tuple(numpy.add(textPos, teamOffset))
+    nextProfilePos = tuple(numpy.add(textPos, profileOffset))
     im.paste(survivor_image, nextTeamPos)
+    im.paste(placeholder_profile, nextProfilePos)
     textPos = (textPos[0], textPos[1] + textOffset)
 
 for p in t2:
     draw.text(textPos, p, font=font, fill=(81, 81, 81, 255))
     nextTeamPos = tuple(numpy.add(textPos, teamOffset))
+    nextProfilePos = tuple(numpy.add(textPos, profileOffset))
     im.paste(infected_image, nextTeamPos)
+    im.paste(placeholder_profile, nextProfilePos) 
     textPos = (textPos[0], textPos[1] + textOffset)
 
 
