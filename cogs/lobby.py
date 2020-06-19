@@ -113,7 +113,7 @@ class Lobby(commands.Cog):
         composite = await self.getTeamComposite(t1, t2)
         composite.save('composite.png')
         await ctx.send(file=discord.File('composite.png'))
-        shuffleNum += 1
+        self.shuffleNum += 1
 
     # Resets the entire lobby
     @commands.command()
@@ -191,7 +191,7 @@ class Lobby(commands.Cog):
         font = ImageFont.truetype("assets/Futurot.ttf", 16)
         sFont = ImageFont.truetype("assets/Futurot.ttf", 36)
 
-        draw.text(shufflePos, "Shuffle " + str(shuffleNum), font=sFont, fill=(81, 81, 81, 255))
+        draw.text(shufflePos, "Shuffle " + str(self.shuffleNum), font=sFont, fill=(81, 81, 81, 255))
         for p in t1:
             # Get survivor image and next image positions
             survivor_image = Image.open('assets/' + survivors.pop())
