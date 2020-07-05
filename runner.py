@@ -44,11 +44,15 @@ draw = ImageDraw.Draw(im)
 profilePos = (184, 171)
 teamPos = (227, 180)
 textPos = (255, 180)
+shufflePos = (10, 10)
 textOffset = 42
 teamOffset = (-72, -11)
 profileOffset = (-29, -3)
 textColor = '#e4e4e4'
 font = ImageFont.truetype("assets/Futurot.ttf", 16)
+sFont = ImageFont.truetype("assets/Futurot.ttf", 36)
+
+draw.text(shufflePos, "Shuffle 1", font=sFont, fill=(81, 81, 81, 255))
 
 for p in t1:
     draw.text(textPos, p, font=font, fill=(81, 81, 81, 255))

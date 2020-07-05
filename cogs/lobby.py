@@ -21,6 +21,7 @@ class Lobby(commands.Cog):
         self.players = []
         self.isStarted = False
         self.janitor.start()
+        self.shuffleNum = 1
         pass
     
     def cog_unload(self):
@@ -121,11 +122,13 @@ class Lobby(commands.Cog):
         composite = await self.getTeamComposite(t1, t2)
         composite.save('composite.png')
         await ctx.send(file=discord.File('composite.png'))
+        self.shuffleNum += 1
 
     # Resets the entire lobby
     @commands.command()
     async def reset(self, ctx):
         self.players = []
+        self.shuffleNum = 1
         await ctx.send('Lobby has been cleared')
 
     @commands.command()
@@ -190,11 +193,14 @@ class Lobby(commands.Cog):
         infected_image = Image.open('assets/infected_small.png')
         draw = ImageDraw.Draw(im)
         textPos = (255, 180)
+        shufflePos = (10, 10)
         textOffset = 42
         teamOffset = (-72, -11)
         profileOffset = (-29, -3)
         font = ImageFont.truetype("assets/Futurot.ttf", 16)
+        sFont = ImageFont.truetype("assets/Futurot.ttf", 36)
 
+        draw.text(shufflePos, "Shuffle " + str(self.shuffleNum), font=sFont, fill=(81, 81, 81, 255))
         for p in t1:
             # Get survivor image and next image positions
             survivor_image = Image.open('assets/' + survivors.pop())
