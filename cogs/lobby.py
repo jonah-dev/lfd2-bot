@@ -1,5 +1,5 @@
 from models.Player import Player
-from discord.ext import commands
+from discord.ext import commands, tasks
 import discord
 from datetime import datetime
 import random
@@ -8,16 +8,25 @@ from PIL import ImageDraw
 from PIL import ImageFont
 import numpy
 import io
+import datetime
+import json
+import urllib.request
 
 
 class Lobby(commands.Cog):
 
     def __init__(self, bot):
+        # pylint: disable=no-member
         self.bot = bot
         self.players = []
         self.isStarted = False
+        self.janitor.start()
         self.shuffleNum = 1
         pass
+    
+    def cog_unload(self):
+        # pylint: disable=no-member
+        self.janitor.cancel()
 
     @commands.command()
     async def help(self, ctx):
@@ -219,9 +228,33 @@ class Lobby(commands.Cog):
 
         return im
 
+    def getConfigValueByKey(self, key):
+        return json.load(open('config.json', 'r'))[key]
+
+    ######## TASKS ########
+    @tasks.loop(seconds=60.0)
+    async def janitor(self):
+        now = datetime.datetime.now().time()
+        resetRangeStart = datetime.time(8)
+        resetRangeEnd = datetime.time(8, 1)
+        daily_fact = ''
+        if (resetRangeStart <= now <= resetRangeEnd):
+            channel = self.bot.get_channel(self.getConfigValueByKey('channel_id'))
+            with urllib.request.urlopen('https://uselessfacts.jsph.pl/today.json?language=en') as f:
+                daily_fact = json.loads(f.read())['fact']
+            self.players = []
+            embed = discord.Embed(
+                colour = discord.Colour.orange()
+            )
+            embed.set_author(name='Daily Update - ' + str(datetime.date.today()))
+            embed.add_field(name='Lobby has been cleared!', value=daily_fact, inline=False)
+            if channel:
+                await channel.send(embed=embed)
+
+
 def setup(bot):
-    print('Setting up Setup cog..')
+    print('Setting up Lobby cog..')
     bot.add_cog(Lobby(bot))
 
 def teardown(bot):
-    print('Unloading Setup cog..')
+    print('Unloading Lobby cog..')

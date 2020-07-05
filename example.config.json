@@ -1,3 +1,4 @@
 {
-    "token": "your token here"
+    "token": "your token here",
+    "channel_id": "your bot channel id here"
 }
