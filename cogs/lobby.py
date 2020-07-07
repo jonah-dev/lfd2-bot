@@ -231,17 +231,24 @@ class Lobby(commands.Cog):
     def getConfigValueByKey(self, key):
         return json.load(open('config.json', 'r'))[key]
 
+    def getChannelByName(self, channel_name):
+        for channel in self.bot.get_all_channels():
+            if channel.name == channel_name:
+                return channel
+        return None
+
     ######## TASKS ########
     @tasks.loop(seconds=60.0)
     async def janitor(self):
         now = datetime.datetime.now().time()
-        resetRangeStart = datetime.time(8)
-        resetRangeEnd = datetime.time(8, 1)
+        resetRangeStart = datetime.time(13)
+        resetRangeEnd = datetime.time(13, 1)
         daily_fact = ''
         if (resetRangeStart <= now <= resetRangeEnd):
-            channel = self.bot.get_channel(self.getConfigValueByKey('channel_id'))
+            channel_name = self.getConfigValueByKey('channel_name')
+            channel = self.getChannelByName(channel_name)
             with urllib.request.urlopen('https://uselessfacts.jsph.pl/today.json?language=en') as f:
-                daily_fact = json.loads(f.read())['fact']
+                daily_fact = json.loads(f.read())['text']
             self.players = []
             embed = discord.Embed(
                 colour = discord.Colour.orange()
