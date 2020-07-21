@@ -1,5 +1,6 @@
 from models.Player import Player
 from discord.ext import commands, tasks
+from discord import VoiceChannel
 import discord
 from datetime import datetime
 import random
@@ -74,6 +75,34 @@ class Lobby(commands.Cog):
             await ctx.send(self.getPlayerList())
         else:
             await ctx.send('There are no players in the game')
+        return
+
+    @commands.command()
+    async def numbers(self, ctx):
+        lobbyCount = len(self.players)
+        if (lobbyCount == 8):
+          await ctx.send('I think we got numbers!')
+          return
+
+        voiceCount = 0
+        for channel in self.bot.get_all_channels():
+          if isinstance(channel, VoiceChannel):
+            voiceCount += len(channel.members)
+                
+        onlineCount = 0
+        for members in ctx.message.guild.members:
+          if (not(members.bot)):
+            onlineCount += 1
+
+        if (voiceCount >= 8):
+          await ctx.send(f'There\'s {voiceCount} in chat but only {lobbyCount} in the lobby. C\'mon!')
+          return
+        
+        if (onlineCount >= 8):
+          await ctx.send(f'There\'s {onlineCount} online and you\'re telling me we only have {lobbyCount} in the lobby???')
+          return
+
+        await ctx.send(f'There\'s {onlineCount} online, {voiceCount} in chat, and only {lobbyCount} in the lobby.')
         return
 
     @commands.command()
