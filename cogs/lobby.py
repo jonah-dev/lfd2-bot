@@ -11,6 +11,7 @@ import io
 import datetime
 import json
 import urllib.request
+import os
 
 
 class Lobby(commands.Cog):
@@ -228,9 +229,6 @@ class Lobby(commands.Cog):
 
         return im
 
-    def getConfigValueByKey(self, key):
-        return json.load(open('config.json', 'r'))[key]
-
     def getChannelByName(self, channel_name):
         for channel in self.bot.get_all_channels():
             if channel.name == channel_name:
@@ -245,7 +243,7 @@ class Lobby(commands.Cog):
         resetRangeEnd = datetime.time(13, 1)
         daily_fact = ''
         if (resetRangeStart <= now <= resetRangeEnd):
-            channel_name = self.getConfigValueByKey('channel_name')
+            channel_name = os.environ['CHANNEL_NAME']
             channel = self.getChannelByName(channel_name)
             with urllib.request.urlopen('https://uselessfacts.jsph.pl/today.json?language=en') as f:
                 daily_fact = json.loads(f.read())['text']

@@ -6,6 +6,7 @@ from collections import deque
 from datetime import datetime
 from models.Player import Player
 import random
+import os
 
 class LFD2Bot(commands.Bot):
     lobbyStarted = False
@@ -96,7 +97,7 @@ class LFD2Bot(commands.Bot):
 
     def run(self):
         try:
-            super().run(self.getToken())
+            super().run(os.environ['DISCORD_TOKEN'])
         except:
             print("Unexpected error")
             raise
@@ -108,7 +109,7 @@ class LFD2Bot(commands.Bot):
     def getToken(self):
         return json.load(open('config.json', 'r'))['token']
 
-# Peggy lets go
+
 print('Booting up the bot')
 bot = LFD2Bot()
 bot.remove_command('help')
