@@ -130,3 +130,6 @@ dmypy.json
 
 # Configs
 config.json
+
+# Content
+composite.png
