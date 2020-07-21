@@ -49,8 +49,8 @@ textOffset = 42
 teamOffset = (-72, -11)
 profileOffset = (-29, -3)
 textColor = '#e4e4e4'
-font = ImageFont.truetype("assets/Futurot.ttf", 16)
-sFont = ImageFont.truetype("assets/Futurot.ttf", 36)
+font = ImageFont.truetype("assets/AmazMegaGrungeOne.ttf", 16)
+sFont = ImageFont.truetype("assets/AmazMegaGrungeOne.ttf", 36)
 
 draw.text(shufflePos, "Shuffle 1", font=sFont, fill=(81, 81, 81, 255))
 

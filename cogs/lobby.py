@@ -227,8 +227,8 @@ class Lobby(commands.Cog):
         textOffset = 42
         teamOffset = (-72, -11)
         profileOffset = (-29, -3)
-        font = ImageFont.truetype("assets/Futurot.ttf", 16)
-        sFont = ImageFont.truetype("assets/Futurot.ttf", 36)
+        font = ImageFont.truetype("assets/AmazMegaGrungeOne.ttf", 16)
+        sFont = ImageFont.truetype("assets/AmazMegaGrungeOne.ttf", 36)
 
         draw.text(shufflePos, "Shuffle " + str(self.shuffleNum), font=sFont, fill=(81, 81, 81, 255))
         for p in t1:
