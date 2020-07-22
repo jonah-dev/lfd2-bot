@@ -91,7 +91,6 @@ class Lobby(commands.Cog):
                 
         onlineCount = 0
         for member in ctx.message.guild.members:
-          print(member.name, member.bot, member.status)
           if (not(member.bot) and member.status == Status.online):
             onlineCount += 1
 
