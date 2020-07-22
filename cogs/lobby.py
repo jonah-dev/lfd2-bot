@@ -1,6 +1,6 @@
 from models.Player import Player
 from discord.ext import commands, tasks
-from discord import VoiceChannel
+from discord import VoiceChannel, Status
 import discord
 from datetime import datetime
 import random
@@ -90,8 +90,8 @@ class Lobby(commands.Cog):
             voiceCount += len(channel.members)
                 
         onlineCount = 0
-        for members in ctx.message.guild.members:
-          if (not(members.bot)):
+        for member in ctx.message.guild.members:
+          if (not(member.bot) and member.status == Status.online):
             onlineCount += 1
 
         if (voiceCount >= 8):
