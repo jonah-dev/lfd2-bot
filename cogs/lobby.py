@@ -4,6 +4,8 @@ from discord import VoiceChannel, Status
 import discord
 from datetime import datetime
 import random
+from time import time
+from math import ceil
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
@@ -22,8 +24,8 @@ class Lobby(commands.Cog):
         self.bot = bot
         self.players = []
         self.isStarted = False
+        self.resetShuffles()
         self.janitor.start()
-        self.shuffleNum = 1
         pass
     
     def cog_unload(self):
@@ -61,12 +63,14 @@ class Lobby(commands.Cog):
         if self.readyCount() == 7:
             await vgChannel.send('@lfd2 Only 1 player until we have a full LFD2 lobby! Join the #lfd2 channel via the #roles')
         await ctx.send(player.getName() + ' has joined the game!')
+        self.resetShuffles()
         return
 
     @commands.command()
     async def leave(self, ctx):
         player = Player(ctx.author)
         await self.removeFromLobby(ctx, player)
+        self.resetShuffles()
         return
 
     @commands.command()
@@ -141,14 +145,12 @@ class Lobby(commands.Cog):
             return
         # Prepare Random Team
         t = self.players.copy()
-        random.shuffle(t)
-        t1 = []
-        t2 = []
-        while(len(t) != 0):
-            t1.append(t.pop())
-            if len(t) == 0:
-                break
-            t2.append(t.pop())
+        seed = self.shuffleSeed + self.shuffleNum
+        random.Random(seed).shuffle(t)
+        teamSize = ceil(len(t)//2)
+        t1 = t[:teamSize]
+        t2 = t[teamSize:]
+
         composite = await self.getTeamComposite(t1, t2)
         composite.save('composite.png')
         await ctx.send(file=discord.File('composite.png'))
@@ -158,7 +160,7 @@ class Lobby(commands.Cog):
     @commands.command()
     async def reset(self, ctx):
         self.players = []
-        self.shuffleNum = 1
+        self.resetShuffles()
         await ctx.send('Lobby has been cleared')
 
     @commands.command()
@@ -178,6 +180,7 @@ class Lobby(commands.Cog):
                 pass
             else:
                 await ctx.send('Succesfully removed: ' + player.getName() + ' from the game. \n There are now ' + str(8 - len(self.players)) + ' spots available')
+                self.resetShuffles()
         else:
             await ctx.send('Player not in lobby: ' + player.getName())
 
@@ -264,6 +267,14 @@ class Lobby(commands.Cog):
                 return channel
         return None
 
+    def resetLobby(self):
+        self.players = []
+        self.resetShuffles()
+
+    def resetShuffles(self):
+        self.shuffleNum = 1
+        self.shuffleSeed = time()
+
     ######## TASKS ########
     @tasks.loop(seconds=60.0)
     async def janitor(self):
@@ -276,10 +287,8 @@ class Lobby(commands.Cog):
             channel = self.getChannelByName(channel_name)
             with urllib.request.urlopen('https://uselessfacts.jsph.pl/today.json?language=en') as f:
                 daily_fact = json.loads(f.read())['text']
-            self.players = []
-            embed = discord.Embed(
-                colour = discord.Colour.orange()
-            )
+            self.resetLobby()
+            embed = discord.Embed(colour = discord.Colour.orange())
             embed.set_author(name='Daily Update - ' + str(datetime.date.today()))
             embed.add_field(name='Lobby has been cleared!', value=daily_fact, inline=False)
             if channel:
