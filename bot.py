@@ -11,8 +11,6 @@ import os
 class LFD2Bot(commands.Bot):
     lobbyStarted = False
 
-    cogs = ['cogs.lobby']
-
     # Init and setup 
     def __init__(self):
         super().__init__(command_prefix='?', description='Organize your LFD2 Games with ease',
@@ -32,7 +30,7 @@ class LFD2Bot(commands.Bot):
             await self.close()
 
         if (message.content == 'reload'):
-            self.reload_extension('cogs.lobby')
+            self.reload_extension('models.Lobby')
 
         if (message.content == '?commands'):
             body = '?start - Initializes the lobby \n' + '?join - Joins the lobby \n' + '?leave - Leaves the lobby \n' + '?lobby - View the lobby \n' + '?order66 - Issues a ping that marks the beginning of the game \n' + '?lag - Calculates your current lag \n' + '?ped - FOOTBALL SZN \n' + '?ready - Ready up! \n' + '?unready - Not R! \n'
@@ -73,7 +71,7 @@ class LFD2Bot(commands.Bot):
             if self.lobbyStarted:
                 await ctx.send('The lobby has already been started')
             self.lobbyStarted = True
-            self.load_extension('cogs.lobby')
+            self.load_extension('models.Lobby')
             await ctx.send('The lobby has been started!')
             return
 
