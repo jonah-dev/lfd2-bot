@@ -1,143 +1,122 @@
-from models.Player import Player
-from discord.ext import commands, tasks
 from discord import VoiceChannel, Status
 import discord
-from datetime import datetime
 import random
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 import numpy
-import io
-import datetime
-import json
-import urllib.request
-import os
 
+from models.Player import Player
 
-class Lobby(commands.Cog):
+class Lobby:
 
-    def __init__(self, bot):
+    def __init__(self, bot, channel):
         # pylint: disable=no-member
         self.bot = bot
+        self.channel = channel
         self.players = []
-        self.isStarted = False
-        self.janitor.start()
         self.shuffleNum = 1
         pass
-    
-    def cog_unload(self):
-        # pylint: disable=no-member
-        self.janitor.cancel()
 
-    @commands.command()
-    async def help(self, ctx):
-        embed = discord.Embed(
-            colour = discord.Colour.orange()
-        )
-        embed.set_author(name='Help')
-        embed.add_field(name='?join', value='Joins the lobby', inline=False)
-        embed.add_field(name='?leave', value='Leaves the lobby', inline=False)
-        embed.add_field(name='?lobby', value='Views the lobby', inline=False)
-        embed.add_field(name='?ready', value='Readies your user', inline=False)
-        embed.add_field(name='?unready', value='Unreadies your user', inline=False)
-        embed.add_field(name='?shuffle', value='Creates a randomly shuffled set of teams with the given lobby.', inline=False)
-        embed.add_field(name='?remove [player]', value='Removes player by tag', inline=False)
-        embed.add_field(name='?reset', value='Resets the lobby', inline=False)
-        await ctx.send(embed=embed)
-
-    @commands.command()
-    async def join(self, ctx):
-        player = Player(ctx.author)
+    async def add(self, user):
+        player = Player(user)
         if self.isFull():
-            await ctx.send('Sorry the game is full. Please wait for someone to leave.')
+            await self.channel.send('Sorry the game is full. Please wait for someone to leave.')
             return
         if self.hasJoined(player):
-            await ctx.send('You are already in the game you pepega.')
+            await self.channel.send('You are already in the game you pepega.')
             return
         self.players.append(player)
         vgChannel = self.bot.get_channel(404134431306285057)
         print(self.readyCount())
         if self.readyCount() == 7:
             await vgChannel.send('@lfd2 Only 1 player until we have a full LFD2 lobby! Join the #lfd2 channel via the #roles')
-        await ctx.send(player.getName() + ' has joined the game!')
+        await self.channel.send(player.getName() + ' has joined the game!')
         return
 
-    @commands.command()
-    async def leave(self, ctx):
-        player = Player(ctx.author)
-        await self.removeFromLobby(ctx, player)
-        return
+    async def remove(self, user):
+        if len(self.players) == 0:
+          await self.channel.send('There are no players in the game')
+          return
 
-    @commands.command()
-    async def lobby(self, ctx):
+        player = Player(user)
+        if player not in self.players:
+          await self.channel.send(f'Player not in lobby: {player.getName()}')
+          return
+
+        try:
+          self.players = list(filter(lambda x: x != player, self.players))
+          await self.channel.send(
+            f'Succesfully removed: {player.getName()} from the game.'
+            + f'\n There are now {str(8 - len(self.players))} spots available'
+          )
+        except:
+          await self.channel.send(f'Error removing player from lobby: {player.getName()}')
+
+    async def showLobby(self):
         if len(self.players):
-            await ctx.send(self.getPlayerList())
+            await self.channel.send(self.getPlayerList())
         else:
-            await ctx.send('There are no players in the game')
+            await self.channel.send('There are no players in the game')
         return
 
-    @commands.command()
-    async def numbers(self, ctx):
+    async def showNumbers(self):
         lobbyCount = len(self.players)
         if (lobbyCount == 8):
-          await ctx.send('I think we got numbers!')
+          await self.channel.send('I think we got numbers!')
           return
 
         voiceCount = 0
-        for channel in self.bot.get_all_channels():
+        for channel in self.channel.bot.get_all_channels():
           if isinstance(channel, VoiceChannel):
             voiceCount += len(channel.members)
-                
+
         onlineCount = 0
-        for member in ctx.message.guild.members:
+        for member in self.channel.message.guild.members:
           if (not(member.bot) and member.status == Status.online):
             onlineCount += 1
 
         if (voiceCount >= 8):
-          await ctx.send(f'There\'s {voiceCount} in chat but only {lobbyCount} in the lobby. C\'mon!')
-          return
-        
-        if (onlineCount >= 8):
-          await ctx.send(f'There\'s {onlineCount} online and you\'re telling me we only have {lobbyCount} in the lobby???')
+          await self.channel.send(f'There\'s {voiceCount} in chat but only {lobbyCount} in the lobby. C\'mon!')
           return
 
-        await ctx.send(f'There\'s {onlineCount} online, {voiceCount} in chat, and only {lobbyCount} in the lobby.')
+        if (onlineCount >= 8):
+          await self.channel.send(f'There\'s {onlineCount} online and you\'re telling me we only have {lobbyCount} in the lobby???')
+          return
+
+        await self.channel.send(f'There\'s {onlineCount} online, {voiceCount} in chat, and only {lobbyCount} in the lobby.')
         return
 
-    @commands.command()
-    async def ready(self, ctx):
-        player = Player(ctx.author)
+    async def ready(self, user):
+        player = Player(user)
         if not(player in self.players):
-            await ctx.send('You cannot ready if you are not in the lobby')
+            await self.channel.send('You cannot ready if you are not in the lobby')
         if player.isReady():
-            await ctx.send('Player is already ready.')
+            await self.channel.send('Player is already ready.')
         else:
             ind = self.players.index(player)
             if ind > -1:
                 self.players[ind].setReady()
-                await ctx.send(player.getName() + ' ready!. ' + ':white_check_mark:')
+                await self.channel.send(player.getName() + ' ready!. ' + ':white_check_mark:')
             else:
-                await ctx.send('Cannot find player')
+                await self.channel.send('Cannot find player')
         return
 
-    @commands.command()
-    async def unready(self, ctx):
-        player = Player(ctx.author)
+    async def unready(self, user):
+        player = Player(user)
         if not(player in self.players):
-            await ctx.send('You cannot unready if you are not in the lobby')
+            await self.channel.send('You cannot unready if you are not in the lobby')
         else:
             ind = self.players.index(player)
             if ind > -1:
                 self.players[ind].setUnready()
-                await ctx.send(player.getName() + ' unreadied!. ' + ':x:')
+                await self.channel.send(player.getName() + ' unreadied!. ' + ':x:')
             else:
-                await ctx.send('Cannot find player')
+                await self.channel.send('Cannot find player')
 
-    @commands.command()
-    async def shuffle(self, ctx):
+    async def showNewShuffle(self):
         if (len(self.players) < 2):
-            await ctx.send('LFD2 Bot needs at least two players in the lobby to shuffle teams.')
+            await self.channel.send('LFD2 Bot needs at least two players in the lobby to shuffle teams.')
             return
         # Prepare Random Team
         t = self.players.copy()
@@ -151,35 +130,8 @@ class Lobby(commands.Cog):
             t2.append(t.pop())
         composite = await self.getTeamComposite(t1, t2)
         composite.save('composite.png')
-        await ctx.send(file=discord.File('composite.png'))
+        await self.channel.send(file=discord.File('composite.png'))
         self.shuffleNum += 1
-
-    # Resets the entire lobby
-    @commands.command()
-    async def reset(self, ctx):
-        self.players = []
-        self.shuffleNum = 1
-        await ctx.send('Lobby has been cleared')
-
-    @commands.command()
-    async def remove(self, ctx, member: discord.Member):
-        await self.removeFromLobby(ctx, Player(member))
-        pass
-
-    # ---- HELPERS ----
-    async def removeFromLobby(self, ctx, player):
-        if len(self.players) == 0:
-            await ctx.send('There are no players in the game')
-        if player in self.players:
-            try:
-                self.players = list(filter(lambda x: x != player, self.players))
-            except:
-                await ctx.send('Error removing player from lobby: ' + player.getName())
-                pass
-            else:
-                await ctx.send('Succesfully removed: ' + player.getName() + ' from the game. \n There are now ' + str(8 - len(self.players)) + ' spots available')
-        else:
-            await ctx.send('Player not in lobby: ' + player.getName())
 
     # Gets string to display team
     def getTeamList(self, team):
@@ -197,7 +149,7 @@ class Lobby(commands.Cog):
 
     def isFull(self):
         return  len(self.players) == 8
-    
+
     def isReady(self):
         return self.isFull() and self.readyCount() == 8
 
@@ -257,38 +209,3 @@ class Lobby(commands.Cog):
             textPos = (textPos[0], textPos[1] + textOffset)
 
         return im
-
-    def getChannelByName(self, channel_name):
-        for channel in self.bot.get_all_channels():
-            if channel.name == channel_name:
-                return channel
-        return None
-
-    ######## TASKS ########
-    @tasks.loop(seconds=60.0)
-    async def janitor(self):
-        now = datetime.datetime.now().time()
-        resetRangeStart = datetime.time(13)
-        resetRangeEnd = datetime.time(13, 1)
-        daily_fact = ''
-        if (resetRangeStart <= now <= resetRangeEnd):
-            channel_name = os.environ['CHANNEL_NAME']
-            channel = self.getChannelByName(channel_name)
-            with urllib.request.urlopen('https://uselessfacts.jsph.pl/today.json?language=en') as f:
-                daily_fact = json.loads(f.read())['text']
-            self.players = []
-            embed = discord.Embed(
-                colour = discord.Colour.orange()
-            )
-            embed.set_author(name='Daily Update - ' + str(datetime.date.today()))
-            embed.add_field(name='Lobby has been cleared!', value=daily_fact, inline=False)
-            if channel:
-                await channel.send(embed=embed)
-
-
-def setup(bot):
-    print('Setting up Lobby cog..')
-    bot.add_cog(Lobby(bot))
-
-def teardown(bot):
-    print('Unloading Lobby cog..')
