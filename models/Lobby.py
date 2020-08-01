@@ -7,6 +7,7 @@ from PIL import ImageFont
 import numpy
 import re
 import asyncio
+from math import ceil
 
 from models.Player import Player
 
@@ -22,21 +23,20 @@ class Lobby:
 
     async def add(self, user):
         if self.isFull():
-            await self.channel.send('Sorry the game is full. Please wait for someone to leave.')
-            return
+          await self.channel.send('Sorry the game is full. Please wait for someone to leave.')
+          return
 
         player = Player(user)
         if self.hasJoined(player):
-            await self.channel.send('You are already in the game you pepega.')
-            return
+          await self.channel.send('You are already in the game you pepega.')
+          return
 
         self.players.append(player)
 
         if self.readyCount() == 7:
-            await self.broadcastGameAlmostFull()
+          await self.broadcastGameAlmostFull()
         
-        await self.channel.send(player.getName() + ' has joined the game!')
-        return
+        await self.channel.send(f'{player.getName()} has joined the game!')
 
     async def remove(self, user):
         if len(self.players) == 0:
@@ -48,21 +48,18 @@ class Lobby:
           await self.channel.send(f'Player not in lobby: {player.getName()}')
           return
 
-        try:
-          self.players = list(filter(lambda x: x != player, self.players))
-          await self.channel.send(
-            f'Succesfully removed: {player.getName()} from the game.'
-            + f'\n There are now {str(8 - len(self.players))} spots available'
-          )
-        except:
-          await self.channel.send(f'Error removing player from lobby: {player.getName()}')
+        self.players.remove(player)
+        await self.channel.send(
+          f'Succesfully removed: {player.getName()} from the game.'
+          + f'\n There are now {str(8 - len(self.players))} spots available'
+        )
 
     async def showLobby(self):
         if len(self.players):
-            await self.channel.send(self.getPlayerList())
-        else:
-            await self.channel.send('There are no players in the game')
-        return
+          await self.channel.send(self.getPlayerList())
+          return
+
+        await self.channel.send('There are no players in the game')
 
     async def showNumbers(self):
         lobbyCount = len(self.players)
@@ -89,73 +86,59 @@ class Lobby:
           return
 
         await self.channel.send(f'There\'s {onlineCount} online, {voiceCount} in chat, and only {lobbyCount} in the lobby.')
-        return
 
     async def ready(self, user):
         player = Player(user)
         if not(player in self.players):
-            await self.channel.send('You cannot ready if you are not in the lobby')
+          await self.channel.send('You cannot ready if you are not in the lobby')
+          return
+        
         if player.isReady():
-            await self.channel.send('Player is already ready.')
-        else:
-            ind = self.players.index(player)
-            if ind > -1:
-                self.players[ind].setReady()
-                await self.channel.send(player.getName() + ' ready!. ' + ':white_check_mark:')
-            else:
-                await self.channel.send('Cannot find player')
-        return
+          await self.channel.send('You\'re already marked as ready. I can tell you\'re really excited.')
+          return
+        
+        ind = self.players.index(player)
+        if ind < 0:
+          await self.channel.send('Cannot find player')
+          return
+
+        self.players[ind].setReady()
+        await self.channel.send(f'{player.getName()} ready!. :white_check_mark:')
 
     async def unready(self, user):
         player = Player(user)
         if not(player in self.players):
-            await self.channel.send('You cannot unready if you are not in the lobby')
-        else:
-            ind = self.players.index(player)
-            if ind > -1:
-                self.players[ind].setUnready()
-                await self.channel.send(player.getName() + ' unreadied!. ' + ':x:')
-            else:
-                await self.channel.send('Cannot find player')
+          await self.channel.send('You cannot unready if you are not in the lobby')
+          return
+        
+        ind = self.players.index(player)
+        if ind < 0:
+          await self.channel.send('Cannot find player')
+
+        self.players[ind].setUnready()
+        await self.channel.send(f'{player.getName()} unreadied!. :x:')
 
     async def showNewShuffle(self):
         if (len(self.players) < 2):
-            await self.channel.send('LFD2 Bot needs at least two players in the lobby to shuffle teams.')
-            return
-        # Prepare Random Team
-        t = self.players.copy()
-        random.shuffle(t)
-        t1 = []
-        t2 = []
-        while(len(t) != 0):
-            t1.append(t.pop())
-            if len(t) == 0:
-                break
-            t2.append(t.pop())
+          await self.channel.send('LFD2 Bot needs at least two players in the lobby to shuffle teams.')
+          return
+
+        (t1, t2) = self.makeNewShuffle()
         composite = await self.getTeamComposite(t1, t2)
         composite.save('composite.png')
         await self.channel.send(file=discord.File('composite.png'))
         self.shuffleNum += 1
 
-    # Gets string to display team
-    def getTeamList(self, team):
-        msg = ''
-        for t in team:
-            msg += t.getName() + "\n"
-        return msg
-
     def getPlayerList(self):
         message = '---- Players ---- \n'
         for p in self.players:
-            message = message + p.getName() + (': :white_check_mark:' if p.isReady() else ': :x:') + '\n'
-        message = message + 'There are now ' + str(8 - len(self.players)) + ' spots available'
+          ready = ':white_check_mark:' if p.isReady() else ':x:'
+          message += f'{p.getName()} {ready}\n'
+        message += f'There are now {str(8 - len(self.players))} spots available'
         return message
 
     def isFull(self):
-        return  len(self.players) == 8
-
-    def isReady(self):
-        return self.isFull() and self.readyCount() == 8
+        return len(self.players) == 8
 
     def hasJoined(self, player):
         return player in self.players
@@ -167,6 +150,18 @@ class Lobby:
             if p.isReady():
                 count+=1
         return count
+
+    def makeNewShuffle(self):
+        t = self.players.copy()
+        random.shuffle(t)
+        t1 = []
+        t2 = []
+        while(len(t) != 0):
+            t1.append(t.pop())
+            if len(t) == 0:
+                break
+            t2.append(t.pop())
+        return tuple(t1, t2)
 
     async def getTeamComposite(self, t1, t2):
         survivors = [
