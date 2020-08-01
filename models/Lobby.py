@@ -144,11 +144,7 @@ class Lobby:
         return player in self.players
 
     def readyCount(self):
-        count = 0
-        for p in self.players:
-          if p.isReady():
-            count+=1
-        return count
+        return reduce(lambda a, p: a+1 if p.isReady() else a, self.players, 0)
 
     def makeNewShuffle(self):
         t = self.players.copy()
