@@ -76,7 +76,7 @@ class Lobby:
             voiceCount += len(channel.members)
 
         onlineCount = 0
-        for member in self.channel.message.guild.members:
+        for member in self.channel.guild.members:
           if (not(member.bot) and member.status == Status.online):
             onlineCount += 1
 
