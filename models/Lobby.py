@@ -8,6 +8,7 @@ import numpy
 import re
 import asyncio
 from math import ceil
+from functools import reduce
 
 from models.Player import Player
 
@@ -56,7 +57,7 @@ class Lobby:
 
     async def showLobby(self):
         if len(self.players):
-          await self.channel.send(self.getPlayerList())
+          await self.channel.send(embed=self.getLobbyMessage())
           return
 
         await self.channel.send('There are no players in the game')
@@ -129,13 +130,27 @@ class Lobby:
         await self.channel.send(file=discord.File('composite.png'))
         self.shuffleNum += 1
 
-    def getPlayerList(self):
-        message = '---- Players ---- \n'
-        for p in self.players:
-          ready = ':white_check_mark:' if p.isReady() else ':x:'
-          message += f'{p.getName()} {ready}\n'
-        message += f'There are now {str(8 - len(self.players))} spots available'
-        return message
+    def getLobbyMessage(self):
+        color = discord.Colour.green() if self.isFull() else discord.Colour.orange()
+        embed = discord.Embed(colour=color)
+        embed.title = f'Left 4 Dead Lobby ({len(self.players)}/8)'
+
+        if self.readyCount() != 0:
+          ready = ''
+          for player in self.players:
+            if player.isReady():
+              ready += f'• {player.getName()}\n'
+          embed.add_field(name=":white_check_mark: Ready!", value=ready, inline=False)
+
+        if self.readyCount() != len(self.players):
+          notReady = ''
+          for player in self.players:
+            if not(player.isReady()):
+              notReady += f'• {player.getName()}\n'
+          embed.add_field(name=":x: Not Ready", value=notReady, inline=False)
+
+        embed.set_footer(text=f'There are {str(8 - len(self.players))} spots still available!')
+        return embed
 
     def isFull(self):
         return len(self.players) == 8
