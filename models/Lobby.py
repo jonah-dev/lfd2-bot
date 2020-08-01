@@ -146,29 +146,22 @@ class Lobby:
     def readyCount(self):
         count = 0
         for p in self.players:
-            print(p)
-            if p.isReady():
-                count+=1
+          if p.isReady():
+            count+=1
         return count
 
     def makeNewShuffle(self):
         t = self.players.copy()
         random.shuffle(t)
-        t1 = []
-        t2 = []
-        while(len(t) != 0):
-            t1.append(t.pop())
-            if len(t) == 0:
-                break
-            t2.append(t.pop())
-        return tuple(t1, t2)
+        teamSize = ceil(len(t) // 2)
+        return t[:teamSize], t[teamSize:]
 
     async def getTeamComposite(self, t1, t2):
         survivors = [
-            'coach_small.png',
-            'ellis_small.jpeg',
-            'nick_small.png',
-            'rochelle_small.png'
+          'coach_small.png',
+          'ellis_small.jpeg',
+          'nick_small.png',
+          'rochelle_small.png'
         ]
         im = Image.open("assets/lobby.png")
         infected_image = Image.open('assets/infected_small.png')
