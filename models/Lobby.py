@@ -1,10 +1,12 @@
-from discord import VoiceChannel, Status
+from discord import VoiceChannel, TextChannel, Status
 import discord
 import random
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 import numpy
+import re
+import asyncio
 
 from models.Player import Player
 
@@ -19,18 +21,20 @@ class Lobby:
         pass
 
     async def add(self, user):
-        player = Player(user)
         if self.isFull():
             await self.channel.send('Sorry the game is full. Please wait for someone to leave.')
             return
+
+        player = Player(user)
         if self.hasJoined(player):
             await self.channel.send('You are already in the game you pepega.')
             return
+
         self.players.append(player)
-        vgChannel = self.bot.get_channel(404134431306285057)
-        print(self.readyCount())
+
         if self.readyCount() == 7:
-            await vgChannel.send('@lfd2 Only 1 player until we have a full LFD2 lobby! Join the #lfd2 channel via the #roles')
+            await self.broadcastGameAlmostFull()
+        
         await self.channel.send(player.getName() + ' has joined the game!')
         return
 
@@ -67,7 +71,7 @@ class Lobby:
           return
 
         voiceCount = 0
-        for channel in self.channel.bot.get_all_channels():
+        for channel in self.bot.get_all_channels():
           if isinstance(channel, VoiceChannel):
             voiceCount += len(channel.members)
 
@@ -209,3 +213,29 @@ class Lobby:
             textPos = (textPos[0], textPos[1] + textOffset)
 
         return im
+
+    async def broadcastGameAlmostFull(self):
+        destinations = self.getBroadcastChannels()
+        message = self.getBroadcastMessage()
+        broadcasts = []
+        for channel in self.bot.get_all_channels():
+          if isinstance(channel, TextChannel) and channel.name in destinations:
+            broadcasts.append(channel.send(embed=message))
+
+        if len(broadcasts) > 0:
+          await asyncio.wait(broadcasts)
+    
+    def getBroadcastChannels(self):
+        if self.channel.topic is None:
+          return []
+
+        return re.findall(r"^\?broadcast #([^\s]+)", self.channel.topic, re.M)
+
+    def getBroadcastMessage(self):
+        embed = discord.Embed(colour = discord.Colour.orange())
+        embed.title = 'Left 4 Dead game starting soon!'
+        embed.description = 'Only one more player is needed for a full lobby.\n'
+        for player in self.players:
+          embed.description += f'• {player.getMention()}\n'
+        embed.description += f'\nJoin {self.channel.mention} to get involved!'
+        return embed

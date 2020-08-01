@@ -14,8 +14,11 @@ class Player():
 
     def getName(self):
         if self.member.display_name == None:
-            return ''
+          return ''
         return self.member.display_name
+    
+    def getMention(self):
+        return self.member.mention
 
     def setType(self, player_type: str):
         self.player_type = player_type
