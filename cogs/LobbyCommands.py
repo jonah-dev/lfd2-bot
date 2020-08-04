@@ -1,6 +1,6 @@
 from discord.ext import commands, tasks
 import discord
-from datetime import datetime
+import datetime
 import json
 import urllib.request
 
@@ -102,7 +102,7 @@ class LobbyCommands(commands.Cog):
 
     @tasks.loop(seconds=60.0)
     async def janitor(self):
-        now = datetime.now().time()
+        now = datetime.datetime.now().time()
         resetRangeStart = datetime.time(13)
         resetRangeEnd = datetime.time(13, 1)
         if resetRangeStart <= now <= resetRangeEnd:
