@@ -7,6 +7,11 @@ from datetime import datetime
 from models.Player import Player
 import random
 import os
+import logging
+import traceback
+
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger('LFD2Bot')
 
 class LFD2Bot(commands.Bot):
 
@@ -14,6 +19,7 @@ class LFD2Bot(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix='?', description='Organize your LFD2 Games with ease',
             pm_help=None, help_attrs=dict(hidden=False), fetch_offline_members=False)
+        
 
     async def on_message(self, message):
         if message.author.bot:
@@ -71,9 +77,10 @@ class LFD2Bot(commands.Bot):
         except Exception as e:
             print(e.args)
     
-    async def on_command_error(self, ctx, exception):
-        print('Exception logged {0}'.format(exception))
-        await ctx.send('There was an error with your input.')
+    async def on_command_error(self, ctx, ex):
+        await ctx.send('There was an error during your command :worried:')
+        stack = "".join(traceback.TracebackException.from_exception(ex.__cause__).format())
+        logger.error(f'Command: "{ctx.message.content}"\n' + stack)
 
     async def on_ready(self):
         print('Logged on as', self.user)
