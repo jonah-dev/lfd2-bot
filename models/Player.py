@@ -38,6 +38,6 @@ class Player():
         if (isinstance(other, Player)):
             return self.member.id == other.member.id
         return False
-
-
-    # Maybe define __hash__ at some point
+    
+    def __hash__(self):
+        return self.member.id

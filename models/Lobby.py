@@ -9,6 +9,7 @@ import re
 import asyncio
 from math import ceil
 from functools import reduce
+from itertools import combinations 
 
 from models.Player import Player
 
@@ -20,6 +21,7 @@ class Lobby:
         self.channel = channel
         self.players = []
         self.shuffleNum = 1
+        self.shuffles = None
         pass
 
     async def add(self, user):
@@ -33,6 +35,7 @@ class Lobby:
           return
 
         self.players.append(player)
+        self.resetShuffles()
 
         if self.readyCount() == 7:
           await self.broadcastGameAlmostFull()
@@ -50,6 +53,8 @@ class Lobby:
           return
 
         self.players.remove(player)
+        self.resetShuffles()
+
         await self.channel.send(
           f'Succesfully removed: {player.getName()} from the game.'
           + f'\n There are now {str(8 - len(self.players))} spots available'
@@ -124,8 +129,16 @@ class Lobby:
           await self.channel.send('LFD2 Bot needs at least two players in the lobby to shuffle teams.')
           return
 
-        (t1, t2) = self.makeNewShuffle()
-        composite = await self.getTeamComposite(t1, t2)
+        if self.shuffles is None:
+          self.shuffles = self.getAllCombinations()
+
+        if self.shuffleNum > len(self.shuffles):
+          await self.channel.send('You\'ve already seen all possible shuffles')
+          return
+
+        team1 = self.shuffles[self.shuffleNum - 1]
+        team2 = sorted([p for p in self.players if p not in team1])
+        composite = await self.getTeamComposite(team1, team2)
         composite.save('composite.png')
         await self.channel.send(file=discord.File('composite.png'))
         self.shuffleNum += 1
@@ -160,12 +173,21 @@ class Lobby:
 
     def readyCount(self):
         return reduce(lambda a, p: a+1 if p.isReady() else a, self.players, 0)
+    
+    def resetShuffles(self):
+        self.shuffleNum = 1
+        self.shuffles = None
 
-    def makeNewShuffle(self):
-        t = self.players.copy()
-        random.shuffle(t)
-        teamSize = ceil(len(t) // 2)
-        return t[:teamSize], t[teamSize:]
+    def getAllCombinations(self):
+        teamSize = ceil(len(self.players) // 2)
+        teams = list()
+        for team in combinations(self.players, teamSize):
+          team = tuple(sorted(team))
+          otherTeam = tuple(sorted([p for p in self.players if p not in team]))
+          if (team not in teams and otherTeam not in teams):
+            teams.append(team)
+        random.shuffle(teams)
+        return teams
 
     async def getTeamComposite(self, t1, t2):
         survivors = [
