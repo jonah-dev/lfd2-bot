@@ -38,6 +38,21 @@ class Player():
         if (isinstance(other, Player)):
             return self.member.id == other.member.id
         return False
+
+    def __ne__(self, other):
+        return self.member.id != other.member.id
+
+    def __gt__(self, other):
+        return self.member.id > other.member.id
+    
+    def __ge__(self, other):
+        return self.member.id >= other.member.id
+    
+    def __le__(self, other):
+        return self.member.id <= other.member.id
+    
+    def __lt__(self, other):
+        return self.member.id < other.member.id
     
     def __hash__(self):
         return self.member.id
