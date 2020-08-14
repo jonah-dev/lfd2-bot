@@ -1,10 +1,6 @@
 from discord import VoiceChannel, TextChannel, Status
 import discord
 import random
-from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFont
-import numpy
 import re
 import asyncio
 from math import ceil
@@ -12,6 +8,7 @@ from functools import reduce
 from itertools import combinations 
 
 from models.Player import Player
+from utils.Composite import Composite
 
 class Lobby:
 
@@ -138,9 +135,8 @@ class Lobby:
 
         team1 = self.shuffles[self.shuffleNum - 1]
         team2 = sorted([p for p in self.players if p not in team1])
-        composite = await self.getTeamComposite(team1, team2)
-        composite.save('composite.png')
-        await self.channel.send(file=discord.File('composite.png'))
+        composite = await Composite.make(self.shuffleNum, team1, team2)
+        await self.channel.send(file=discord.File(composite))
         self.shuffleNum += 1
 
     def getLobbyMessage(self):
@@ -188,52 +184,6 @@ class Lobby:
             teams.append(team)
         random.shuffle(teams)
         return teams
-
-    async def getTeamComposite(self, t1, t2):
-        survivors = [
-          'coach_small.png',
-          'ellis_small.jpeg',
-          'nick_small.png',
-          'rochelle_small.png'
-        ]
-        im = Image.open("assets/lobby.png")
-        infected_image = Image.open('assets/infected_small.png')
-        draw = ImageDraw.Draw(im)
-        textPos = (255, 180)
-        shufflePos = (10, 10)
-        textOffset = 42
-        teamOffset = (-72, -11)
-        profileOffset = (-29, -3)
-        font = ImageFont.truetype("assets/AmazMegaGrungeOne.ttf", 16)
-        sFont = ImageFont.truetype("assets/AmazMegaGrungeOne.ttf", 36)
-
-        draw.text(shufflePos, "Shuffle " + str(self.shuffleNum), font=sFont, fill=(81, 81, 81, 255))
-        for p in t1:
-            # Get survivor image and next image positions
-            survivor_image = Image.open('assets/' + survivors.pop())
-            profile_image = await p.getAvatar()
-            nextTeamPos = tuple(numpy.add(textPos, teamOffset))
-            nextProfilePos = tuple(numpy.add(textPos, profileOffset))
-            # Write Player Data to Image
-            draw.text(textPos, p.getName(), font=font, fill=(81, 81, 81, 255))
-            im.paste(survivor_image, nextTeamPos)
-            im.paste(profile_image.resize((20,20)), nextProfilePos)
-            # Increment text position for next iteration
-            textPos = (textPos[0], textPos[1] + textOffset)
-
-        for p in t2:
-            # Get survivor image and next image positions
-            profile_image = await p.getAvatar()
-            nextTeamPos = tuple(numpy.add(textPos, teamOffset))
-            nextProfilePos = tuple(numpy.add(textPos, profileOffset))
-            # Write Player Data to Image
-            draw.text(textPos, p.getName(), font=font, fill=(81, 81, 81, 255))
-            im.paste(infected_image, nextTeamPos)
-            im.paste(profile_image.resize((20,20)), nextProfilePos)
-            # Increment text position for next iteration
-            textPos = (textPos[0], textPos[1] + textOffset)
-
-        return im
 
     async def broadcastGameAlmostFull(self):
         destinations = self.getBroadcastChannels()
