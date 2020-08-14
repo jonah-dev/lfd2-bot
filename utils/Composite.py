@@ -23,10 +23,10 @@ ROW_HEIGHT = 42
 class Composite:
     
     @staticmethod
-    async def make(shuffleNum, survivors, infected):
+    async def make(lobby, survivors, infected):
         image = blank.copy()
         draw = ImageDraw.Draw(image)
-        Composite.__drawShuffleNumber(draw, shuffleNum)
+        Composite.__drawShuffleNumber(draw, lobby.shuffleNum)
 
         ops = []
         for index, player in enumerate(survivors):
@@ -40,7 +40,7 @@ class Composite:
           ops.append(Composite.__drawPlayer(draw, image, player, character, y))
 
         await asyncio.wait(ops)
-        filename = 'composite.png'
+        filename = f"assets/temp/composite-{lobby.channel.id}.png"
         image.save(filename)
         return filename
 

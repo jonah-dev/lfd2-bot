@@ -135,7 +135,7 @@ class Lobby:
 
         team1 = self.shuffles[self.shuffleNum - 1]
         team2 = sorted([p for p in self.players if p not in team1])
-        composite = await Composite.make(self.shuffleNum, team1, team2)
+        composite = await Composite.make(self, team1, team2)
         await self.channel.send(file=discord.File(composite))
         self.shuffleNum += 1
 

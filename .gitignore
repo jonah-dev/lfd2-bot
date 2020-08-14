@@ -132,4 +132,5 @@ dmypy.json
 config.json
 
 # Content
-composite.png
+assets/temp/*
+!assets/temp/.keep
