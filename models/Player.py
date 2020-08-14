@@ -40,6 +40,10 @@ class Player():
         self.__cachedAvatar = image
         return image
 
+    def isInVoice(self):
+        state = self.member.voice
+        return state is not None and state.channel is not None
+
     def __eq__(self, other):
         if (isinstance(other, Player)):
             return self.member.id == other.member.id

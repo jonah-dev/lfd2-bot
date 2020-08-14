@@ -17,6 +17,11 @@ survivor_characters = [
   Image.open('assets/rochelle_small.png'),
 ]
 
+is_ready = Image.open('assets/ready.png')
+not_ready = Image.open('assets/not_ready.png')
+voice_on = Image.open('assets/voice_on.png')
+voice_off = Image.open('assets/voice_off.png')
+
 PLAYER_ONE_START = 169
 ROW_HEIGHT = 42
 
@@ -52,8 +57,12 @@ class Composite:
     @staticmethod
     async def __drawPlayer(draw, composite, player, character, y):
         profile = await player.getAvatar()
+        ready = is_ready if player.isReady() else not_ready
+        voice = voice_on if player.isInVoice() else voice_off
 
         y += PLAYER_ONE_START
+        composite.paste(ready, (132, y + 11), ready)
+        composite.paste(voice, (155, y + 5), voice)
         composite.paste(character, (183, y))
         composite.paste(profile.resize((19,19)), (226, y + 8))
         draw.text(
