@@ -1,5 +1,3 @@
-from discord import VoiceChannel, TextChannel, Status
-import discord
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
