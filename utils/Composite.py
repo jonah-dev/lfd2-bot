@@ -17,8 +17,8 @@ survivor_characters = [
   Image.open('assets/rochelle_small.png'),
 ]
 
+PLAYER_ONE_START = 169
 ROW_HEIGHT = 42
-PLAYER_START = 169
 
 class Composite:
     
@@ -53,7 +53,7 @@ class Composite:
     async def __drawPlayer(draw, composite, player, character, y):
         profile = await player.getAvatar()
 
-        y += PLAYER_START
+        y += PLAYER_ONE_START
         composite.paste(character, (183, y))
         composite.paste(profile.resize((19,19)), (226, y + 8))
         draw.text(
