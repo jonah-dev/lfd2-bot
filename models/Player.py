@@ -8,6 +8,7 @@ class Player():
     def __init__(self, member: discord.Member):
         self.member = member
         self.ready = False
+        self.__cachedAvatar = None
 
     def isReady(self):
         return self.ready
@@ -30,9 +31,18 @@ class Player():
         self.ready = False
 
     async def getAvatar(self):
-        #TODO Cache these byte objects in database
-        byteObject = await self.member.avatar_url_as(static_format="png", size=1024).read()
-        return Image.open(io.BytesIO(byteObject))
+        if (self.__cachedAvatar is not None):
+          return self.__cachedAvatar
+
+        url = self.member.avatar_url_as(static_format="png", size=1024)
+        data = await url.read()
+        image = Image.open(io.BytesIO(data))
+        self.__cachedAvatar = image
+        return image
+
+    def isInVoice(self):
+        state = self.member.voice
+        return state is not None and state.channel is not None
 
     def __eq__(self, other):
         if (isinstance(other, Player)):
