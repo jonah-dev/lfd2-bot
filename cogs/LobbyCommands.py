@@ -107,12 +107,13 @@ class LobbyCommands(commands.Cog):
         resetRangeEnd = datetime.time(13, 1)
         if resetRangeStart <= now <= resetRangeEnd:
           daily_fact = self.getTodaysUselessFact()
-          for lobby in self.lobbies:
-            self.lobbies[lobby.channel.id] = Lobby(lobby.channel, self.bot)
+          for index in self.lobbies:
+            channel = self.lobbies[index].channel
+            self.lobbies[index] = Lobby(channel, self.bot)
             embed = discord.Embed(colour = discord.Colour.orange())
             embed.set_author(name=f'Daily Update - {str(datetime.date.today())}')
             embed.add_field(name='Lobby has been cleared!', value=daily_fact, inline=False)
-            await lobby.channel.send(embed=embed)
+            await channel.send(embed=embed)
 
     def getTodaysUselessFact(self):
         req = urllib.request.urlopen('https://uselessfacts.jsph.pl/today.json?language=en')
