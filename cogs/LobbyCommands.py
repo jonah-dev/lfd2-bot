@@ -65,13 +65,17 @@ class LobbyCommands(commands.Cog):
         await self.getLobbyThen(ctx, lambda lobby: lobby.add(ctx.author))
 
     @commands.command()
+    async def add(self, ctx, member: discord.Member):
+        await self.getLobbyThen(ctx, lambda lobby: lobby.add(member, author=ctx.author))
+
+    @commands.command()
     async def leave(self, ctx):
         await self.getLobbyThen(ctx, lambda lobby: lobby.remove(ctx.author))
 
     @commands.command()
     async def remove(self, ctx, member: discord.Member):
-        await self.getLobbyThen(ctx, lambda lobby: lobby.remove(member))
-
+        await self.getLobbyThen(ctx, lambda lobby: lobby.remove(member, author=ctx.author))
+    
     @commands.command()
     async def ready(self, ctx):
         await self.getLobbyThen(ctx, lambda lobby: lobby.ready(ctx.author))

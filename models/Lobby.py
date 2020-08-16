@@ -17,11 +17,23 @@ class Lobby:
         self.bot = bot
         self.channel = channel
         self.players = []
+        self.leavers = []
         self.shuffleNum = 1
         self.shuffles = None
         pass
 
-    async def add(self, user):
+    async def add(self, user, author=None):
+        if author is not None:
+          if (not self.hasJoined(Player(author))):
+            await self.channel.send('You must be in the lobby to add other players.')
+            return
+          
+          # Other players cannot add you to the lobby
+          # if you left on your own. (until lobby reset) 
+          if (self.hasLeftBefore(Player(user))):
+            await self.channel.send('This player has recently left the lobby and cannot be added back by other players.')
+            return
+
         if self.isFull():
           await self.channel.send('Sorry the game is full. Please wait for someone to leave.')
           return
@@ -38,8 +50,8 @@ class Lobby:
           await self.broadcastGameAlmostFull()
         
         await self.channel.send(f'{player.getName()} has joined the game!')
-
-    async def remove(self, user):
+    
+    async def remove(self, user, author=None):
         if len(self.players) == 0:
           await self.channel.send('There are no players in the game')
           return
@@ -48,6 +60,11 @@ class Lobby:
         if player not in self.players:
           await self.channel.send(f'Player not in lobby: {player.getName()}')
           return
+        
+        if author is None:
+          # If a user removes themself, then _others_
+          # can't add them back until the lobby resets. 
+          self.leavers.append(player)
 
         self.players.remove(player)
         self.resetShuffles()
@@ -166,6 +183,9 @@ class Lobby:
 
     def hasJoined(self, player):
         return player in self.players
+    
+    def hasLeftBefore(self, player):
+        return player in self.leavers
 
     def readyCount(self):
         return reduce(lambda a, p: a+1 if p.isReady() else a, self.players, 0)
