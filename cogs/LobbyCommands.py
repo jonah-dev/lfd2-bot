@@ -109,7 +109,7 @@ class LobbyCommands(commands.Cog):
           daily_fact = self.getTodaysUselessFact()
           for index in self.lobbies:
             channel = self.lobbies[index].channel
-            self.lobbies[index] = Lobby(channel, self.bot)
+            self.lobbies[index] = Lobby(self.bot, channel)
             embed = discord.Embed(colour = discord.Colour.orange())
             embed.set_author(name=f'Daily Update - {str(datetime.date.today())}')
             embed.add_field(name='Lobby has been cleared!', value=daily_fact, inline=False)
