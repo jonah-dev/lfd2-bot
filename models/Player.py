@@ -4,6 +4,7 @@ from PIL import Image
 import io
 
 class Player():
+
     def __init__(self, member: discord.Member):
         self.member: discord.Member = member
         self.ready: bool = False

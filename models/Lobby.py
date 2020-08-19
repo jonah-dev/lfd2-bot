@@ -13,7 +13,6 @@ from models.Player import Player
 from utils.Composite import Composite
 
 class Lobby:
-    bot: Bot
 
     def __init__(self, bot: Bot, channel: TextChannel):
         self.bot = bot

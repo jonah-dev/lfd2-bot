@@ -16,12 +16,10 @@ def teardown(bot: Bot):
     print('Unloading Lobby cog..')
 
 class LobbyCommands(Cog):
-    bot: Bot
-    lobbies: Dict[int, Lobby]
 
     def __init__(self, bot: Bot):
-        self.bot = bot
-        self.lobbies = {}
+        self.bot: Bot = bot
+        self.lobbies: Dict[int, Lobby] = {}
         self.janitor.start()
         pass
     
