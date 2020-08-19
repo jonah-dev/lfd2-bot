@@ -1,4 +1,6 @@
+from typing import List, Tuple, Optional
 from discord import VoiceChannel, TextChannel, Status
+from discord.ext.commands import command, Cog, Bot, Context
 import discord
 import random
 import re
@@ -11,17 +13,17 @@ from models.Player import Player
 from utils.Composite import Composite
 
 class Lobby:
+    bot: Bot
 
-    def __init__(self, bot, channel):
-        # pylint: disable=no-member
+    def __init__(self, bot: Bot, channel: TextChannel):
         self.bot = bot
-        self.channel = channel
-        self.players = []
-        self.shuffleNum = 1
-        self.shuffles = None
+        self.channel: TextChannel = channel
+        self.players: List[Player] = []
+        self.shuffleNum: int = 1
+        self.shuffles: Optional[List[Tuple[Player, ...]]] = None
         pass
 
-    async def add(self, user):
+    async def add(self, user: discord.member) -> None:
         if self.isFull():
           await self.channel.send('Sorry the game is full. Please wait for someone to leave.')
           return
@@ -39,7 +41,7 @@ class Lobby:
         
         await self.channel.send(f'{player.getName()} has joined the game!')
 
-    async def remove(self, user):
+    async def remove(self, user: discord.member) -> None:
         if len(self.players) == 0:
           await self.channel.send('There are no players in the game')
           return
@@ -57,14 +59,14 @@ class Lobby:
           + f'\n There are now {str(8 - len(self.players))} spots available'
         )
 
-    async def showLobby(self):
+    async def showLobby(self) -> None:
         if len(self.players):
           await self.channel.send(embed=self.getLobbyMessage())
           return
 
         await self.channel.send('There are no players in the game')
 
-    async def showNumbers(self):
+    async def showNumbers(self) -> None:
         lobbyCount = len(self.players)
         if (lobbyCount == 8):
           await self.channel.send('I think we got numbers!')
@@ -90,7 +92,7 @@ class Lobby:
 
         await self.channel.send(f'There\'s {onlineCount} online, {voiceCount} in chat, and only {lobbyCount} in the lobby.')
 
-    async def ready(self, user):
+    async def ready(self, user: discord.member) -> None:
         player = Player(user)
         if not(player in self.players):
           await self.channel.send('You cannot ready if you are not in the lobby')
@@ -108,7 +110,7 @@ class Lobby:
         self.players[ind].setReady()
         await self.channel.send(f'{player.getName()} ready!. :white_check_mark:')
 
-    async def unready(self, user):
+    async def unready(self, user: discord.member) -> None:
         player = Player(user)
         if not(player in self.players):
           await self.channel.send('You cannot unready if you are not in the lobby')
@@ -121,7 +123,7 @@ class Lobby:
         self.players[ind].setUnready()
         await self.channel.send(f'{player.getName()} unreadied!. :x:')
 
-    async def showNewShuffle(self):
+    async def showNewShuffle(self) -> None:
         if (len(self.players) < 2):
           await self.channel.send('LFD2 Bot needs at least two players in the lobby to shuffle teams.')
           return
@@ -134,12 +136,12 @@ class Lobby:
           return
 
         team1 = self.shuffles[self.shuffleNum - 1]
-        team2 = sorted([p for p in self.players if p not in team1])
+        team2 = tuple(sorted([p for p in self.players if p not in team1]))
         composite = await Composite.make(self, team1, team2)
         await self.channel.send(file=discord.File(composite))
         self.shuffleNum += 1
 
-    def getLobbyMessage(self):
+    def getLobbyMessage(self) -> discord.Embed:
         color = discord.Colour.green() if self.isFull() else discord.Colour.orange()
         embed = discord.Embed(colour=color)
         embed.title = f'Left 4 Dead Lobby ({len(self.players)}/8)'
@@ -161,20 +163,20 @@ class Lobby:
         embed.set_footer(text=f'There are {str(8 - len(self.players))} spots still available!')
         return embed
 
-    def isFull(self):
+    def isFull(self) -> bool:
         return len(self.players) == 8
 
-    def hasJoined(self, player):
+    def hasJoined(self, player: Player) -> bool:
         return player in self.players
 
-    def readyCount(self):
+    def readyCount(self) -> int:
         return reduce(lambda a, p: a+1 if p.isReady() else a, self.players, 0)
     
-    def resetShuffles(self):
+    def resetShuffles(self) -> None:
         self.shuffleNum = 1
         self.shuffles = None
 
-    def getAllCombinations(self):
+    def getAllCombinations(self) -> List[Tuple[Player, ...]]:
         teamSize = ceil(len(self.players) // 2)
         teams = list()
         for team in combinations(self.players, teamSize):
@@ -185,7 +187,7 @@ class Lobby:
         random.shuffle(teams)
         return teams
 
-    async def broadcastGameAlmostFull(self):
+    async def broadcastGameAlmostFull(self) -> None:
         destinations = self.getBroadcastChannels()
         message = self.getBroadcastMessage()
         broadcasts = []
@@ -196,13 +198,13 @@ class Lobby:
         if len(broadcasts) > 0:
           await asyncio.wait(broadcasts)
     
-    def getBroadcastChannels(self):
+    def getBroadcastChannels(self) -> List[TextChannel]:
         if self.channel.topic is None:
           return []
 
         return re.findall(r"^\?broadcast #([^\s]+)", self.channel.topic, re.M)
 
-    def getBroadcastMessage(self):
+    def getBroadcastMessage(self) -> discord.Embed:
         embed = discord.Embed(colour = discord.Colour.orange())
         embed.title = 'Left 4 Dead game starting soon!'
         embed.description = 'Only one more player is needed for a full lobby.\n'

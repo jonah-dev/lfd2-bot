@@ -1,4 +1,6 @@
-from discord.ext import commands, tasks
+from typing import Dict
+from discord.ext import tasks
+from discord.ext.commands import command, Cog, Bot, Context
 import discord
 import datetime
 import json
@@ -6,29 +8,29 @@ import urllib.request
 
 from models.Lobby import Lobby
 
-def setup(bot):
+def setup(bot: Bot):
     print('Setting up Lobby cog..')
     bot.add_cog(LobbyCommands(bot))
 
-def teardown(bot):
+def teardown(bot: Bot):
     print('Unloading Lobby cog..')
 
-class LobbyCommands(commands.Cog):
+class LobbyCommands(Cog):
+    bot: Bot
+    lobbies: Dict[int, Lobby]
 
-    def __init__(self, bot):
-        # pylint: disable=no-member
+    def __init__(self, bot: Bot):
         self.bot = bot
         self.lobbies = {}
         self.janitor.start()
         pass
     
     def cog_unload(self):
-        # pylint: disable=no-member
         self.janitor.cancel()
     
     # -------- Helpers --------
 
-    async def getLobbyThen(self, ctx, fn):
+    async def getLobbyThen(self, ctx: Context, fn) -> None:
         if ctx.channel.id in self.lobbies:
           self.lobbies[ctx.channel.id].channel = ctx.channel
           return await fn(self.lobbies[ctx.channel.id])
@@ -37,8 +39,8 @@ class LobbyCommands(commands.Cog):
 
     # -------- Commands --------
 
-    @commands.command()
-    async def help(self, ctx):
+    @command()
+    async def help(self, ctx: Context):
         embed = discord.Embed(colour = discord.Colour.orange())
         embed.set_author(name='Help')
         embed.add_field(name='?join', value='Joins the lobby', inline=False)
@@ -51,49 +53,49 @@ class LobbyCommands(commands.Cog):
         embed.add_field(name='?reset', value='Resets the lobby', inline=False)
         await ctx.send(embed=embed)
 
-    @commands.command()
-    async def start(self, ctx):
-      if ctx.channel.id in self.lobbies:
-        await ctx.send('The lobby has already been started. You can restart the lobby with `?reset`.')
-        return
+    @command()
+    async def start(self, ctx: Context):
+        if ctx.channel.id in self.lobbies:
+          await ctx.send('The lobby has already been started. You can restart the lobby with `?reset`.')
+          return
+        
+        self.lobbies[ctx.channel.id] = Lobby(self.bot, ctx.channel)
+        await ctx.send('The lobby has been started!')
 
-      self.lobbies[ctx.channel.id] = Lobby(self.bot, ctx.channel)
-      await ctx.send('The lobby has been started!')
-
-    @commands.command()
-    async def join(self, ctx):
+    @command()
+    async def join(self, ctx: Context):
         await self.getLobbyThen(ctx, lambda lobby: lobby.add(ctx.author))
 
-    @commands.command()
-    async def leave(self, ctx):
+    @command()
+    async def leave(self, ctx: Context):
         await self.getLobbyThen(ctx, lambda lobby: lobby.remove(ctx.author))
 
-    @commands.command()
-    async def remove(self, ctx, member: discord.Member):
+    @command()
+    async def remove(self, ctx: Context, member: discord.Member):
         await self.getLobbyThen(ctx, lambda lobby: lobby.remove(member))
 
-    @commands.command()
-    async def ready(self, ctx):
+    @command()
+    async def ready(self, ctx: Context):
         await self.getLobbyThen(ctx, lambda lobby: lobby.ready(ctx.author))
 
-    @commands.command()
-    async def unready(self, ctx):
+    @command()
+    async def unready(self, ctx: Context):
         await self.getLobbyThen(ctx, lambda lobby: lobby.unready(ctx.author))
 
-    @commands.command()
-    async def numbers(self, ctx):
+    @command()
+    async def numbers(self, ctx: Context):
         await self.getLobbyThen(ctx, lambda lobby: lobby.showNumbers())
 
-    @commands.command()
-    async def lobby(self, ctx):
+    @command()
+    async def lobby(self, ctx: Context):
         await self.getLobbyThen(ctx, lambda lobby: lobby.showLobby())
 
-    @commands.command()
-    async def shuffle(self, ctx):
+    @command()
+    async def shuffle(self, ctx: Context):
         await self.getLobbyThen(ctx, lambda lobby: lobby.showNewShuffle())
 
-    @commands.command()
-    async def reset(self, ctx):
+    @command()
+    async def reset(self, ctx: Context):
         created = 'reset' if ctx.channel.id in self.lobbies else 'started'
         self.lobbies[ctx.channel.id] = Lobby(self.bot, ctx.channel)
         await ctx.send(f'The lobby has been {created}!')
