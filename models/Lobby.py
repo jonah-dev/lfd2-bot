@@ -110,6 +110,10 @@ class Lobby:
         self.players[ind].setUnready()
         await self.channel.send(f'{player.getName()} unreadied!. :x:')
     
+    async def flyin(self, user):
+        self.add(user)
+        self.ready(user)
+
     async def showNewShuffle(self):
         if (len(self.players) < 2):
           raise UsageException(self.channel, 'LFD2 Bot needs at least two players in the lobby to shuffle teams.')

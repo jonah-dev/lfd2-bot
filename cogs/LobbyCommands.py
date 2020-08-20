@@ -79,6 +79,10 @@ class LobbyCommands(commands.Cog):
     @commands.command()
     async def unready(self, ctx):
         await self.getLobbyThen(ctx, lambda lobby: lobby.unready(ctx.author))
+    
+    @commands.command()
+    async def flyin(self, ctx):
+        await self.getLobbyThen(ctx, lambda lobby: lobby.flyin(ctx.author))
 
     @commands.command()
     async def numbers(self, ctx):
