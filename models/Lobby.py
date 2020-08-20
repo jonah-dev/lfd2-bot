@@ -73,7 +73,7 @@ class Lobby:
         voiceCount = 0
         for channel in self.bot.get_all_channels():
           if isinstance(channel, VoiceChannel):
-            voiceCount += len(channel.members)
+            voiceCount += len(list(filter(lambda m: not(m.bot), channel.members)))
 
         onlineCount = 0
         for member in self.channel.guild.members:
