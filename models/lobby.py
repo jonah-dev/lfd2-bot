@@ -11,7 +11,7 @@ from discord import Member, Status
 from discord import VoiceChannel, TextChannel
 from discord.ext.commands import Bot
 
-from models.Player import Player
+from models.player import Player
 from utils.Composite import Composite
 from utils.UsageException import UsageException
 
