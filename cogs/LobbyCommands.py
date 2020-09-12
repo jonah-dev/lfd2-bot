@@ -7,6 +7,7 @@ import json
 import urllib.request
 
 from models.Lobby import Lobby
+from utils.UsageException import UsageException
 
 def setup(bot: Bot):
     print('Setting up Lobby cog..')
@@ -54,10 +55,9 @@ class LobbyCommands(Cog):
     @command()
     async def start(self, ctx: Context):
         if ctx.channel.id in self.lobbies:
-          await ctx.send('The lobby has already been started. You can restart the lobby with `?reset`.')
-          return
-        
-        self.lobbies[ctx.channel.id] = Lobby(self.bot, ctx.channel)
+          raise UsageException(ctx.channel, 'The lobby has already been started. You can restart the lobby with `?reset`.')
+
+        self.lobbies[ctx.c(hannel.id] = Lobby(self.bot, ctx.channel)
         await ctx.send('The lobby has been started!')
 
     @command()
@@ -79,6 +79,10 @@ class LobbyCommands(Cog):
     @command()
     async def unready(self, ctx: Context):
         await self.getLobbyThen(ctx, lambda lobby: lobby.unready(ctx.author))
+    
+    @commands.command()
+    async def flyin(self, ctx):
+        await self.getLobbyThen(ctx, lambda lobby: lobby.flyin(ctx.author))
 
     @command()
     async def numbers(self, ctx: Context):

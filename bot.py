@@ -10,6 +10,8 @@ import os
 import logging
 import traceback
 
+from utils.UsageException import UsageException
+
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger('LFD2Bot')
 
@@ -78,6 +80,10 @@ class LFD2Bot(commands.Bot):
             print(e.args)
     
     async def on_command_error(self, ctx, ex):
+        if isinstance(ex, UsageException):
+          await ex.notice()
+          return
+
         await ctx.send('There was an error during your command :worried:')
         stack = "".join(traceback.TracebackException.from_exception(ex.__cause__).format())
         logger.error(f'Command: "{ctx.message.content}"\n' + stack)

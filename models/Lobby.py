@@ -11,6 +11,7 @@ from itertools import combinations
 
 from models.Player import Player
 from utils.Composite import Composite
+from utils.UsageException import UsageException
 
 class Lobby:
 
@@ -24,13 +25,11 @@ class Lobby:
 
     async def add(self, user: discord.member) -> None:
         if self.isFull():
-          await self.channel.send('Sorry the game is full. Please wait for someone to leave.')
-          return
+          raise UsageException(self.channel, 'Sorry the game is full. Please wait for someone to leave.')
 
         player = Player(user)
         if self.hasJoined(player):
-          await self.channel.send('You are already in the game you pepega.')
-          return
+          raise UsageException(self.channel, 'You are already in the game you pepega.')
 
         self.players.append(player)
         self.resetShuffles()
@@ -42,13 +41,11 @@ class Lobby:
 
     async def remove(self, user: discord.member) -> None:
         if len(self.players) == 0:
-          await self.channel.send('There are no players in the game')
-          return
+          raise UsageException(self.channel, 'There are no players in the game')
 
         player = Player(user)
         if player not in self.players:
-          await self.channel.send(f'Player not in lobby: {player.getName()}')
-          return
+          raise UsageException(self.channel, f'Player not in lobby: {player.getName()}')
 
         self.players.remove(player)
         self.resetShuffles()
@@ -59,22 +56,20 @@ class Lobby:
         )
 
     async def showLobby(self) -> None:
-        if len(self.players):
-          await self.channel.send(embed=self.getLobbyMessage())
-          return
-
-        await self.channel.send('There are no players in the game')
+        if len(self.players) < 1:
+          raise UsageException(self.channel, 'There are no players in the game')
+        
+        await self.channel.send(embed=self.getLobbyMessage())
 
     async def showNumbers(self) -> None:
         lobbyCount = len(self.players)
         if (lobbyCount == 8):
-          await self.channel.send('I think we got numbers!')
-          return
+          raise UsageException(self.channel, 'I think we got numbers!')
 
         voiceCount = 0
         for channel in self.bot.get_all_channels():
           if isinstance(channel, VoiceChannel):
-            voiceCount += len(channel.members)
+            voiceCount += len(list(filter(lambda m: not(m.bot), channel.members)))
 
         onlineCount = 0
         for member in self.channel.guild.members:
@@ -82,29 +77,24 @@ class Lobby:
             onlineCount += 1
 
         if (voiceCount >= 8):
-          await self.channel.send(f'There\'s {voiceCount} in chat but only {lobbyCount} in the lobby. C\'mon!')
-          return
+          raise UsageException(self.channel, f'There\'s {voiceCount} in chat but only {lobbyCount} in the lobby. C\'mon!')
 
         if (onlineCount >= 8):
-          await self.channel.send(f'There\'s {onlineCount} online and you\'re telling me we only have {lobbyCount} in the lobby???')
-          return
+          raise UsageException(self.channel, f'There\'s {onlineCount} online and you\'re telling me we only have {lobbyCount} in the lobby???')
 
         await self.channel.send(f'There\'s {onlineCount} online, {voiceCount} in chat, and only {lobbyCount} in the lobby.')
 
     async def ready(self, user: discord.member) -> None:
         player = Player(user)
         if not(player in self.players):
-          await self.channel.send('You cannot ready if you are not in the lobby')
-          return
+          raise UsageException(self.channel, 'You cannot ready if you are not in the lobby')
         
         if player.isReady():
-          await self.channel.send('You\'re already marked as ready. I can tell you\'re really excited.')
-          return
+          raise UsageException(self.channel, 'You\'re already marked as ready. I can tell you\'re really excited.')
         
         ind = self.players.index(player)
         if ind < 0:
-          await self.channel.send('Cannot find player')
-          return
+          raise UsageException(self.channel, 'Cannot find player')
 
         self.players[ind].setReady()
         await self.channel.send(f'{player.getName()} ready!. :white_check_mark:')
@@ -112,27 +102,28 @@ class Lobby:
     async def unready(self, user: discord.member) -> None:
         player = Player(user)
         if not(player in self.players):
-          await self.channel.send('You cannot unready if you are not in the lobby')
-          return
+          raise UsageException(self.channel, 'You cannot unready if you are not in the lobby')
         
         ind = self.players.index(player)
         if ind < 0:
-          await self.channel.send('Cannot find player')
+          raise UsageException(self.channel, 'Cannot find player')
 
         self.players[ind].setUnready()
         await self.channel.send(f'{player.getName()} unreadied!. :x:')
+    
+    async def flyin(self, user):
+        self.add(user)
+        self.ready(user)
 
     async def showNewShuffle(self) -> None:
         if (len(self.players) < 2):
-          await self.channel.send('LFD2 Bot needs at least two players in the lobby to shuffle teams.')
-          return
+          raise UsageException(self.channel, 'LFD2 Bot needs at least two players in the lobby to shuffle teams.')
 
         if self.shuffles is None:
           self.shuffles = self.getAllCombinations()
 
         if self.shuffleNum > len(self.shuffles):
-          await self.channel.send('You\'ve already seen all possible shuffles')
-          return
+          raise UsageException(self.channel, 'You\'ve already seen all possible shuffles')
 
         team1 = self.shuffles[self.shuffleNum - 1]
         team2 = tuple(sorted([p for p in self.players if p not in team1]))
