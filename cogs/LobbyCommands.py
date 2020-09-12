@@ -57,7 +57,7 @@ class LobbyCommands(Cog):
         if ctx.channel.id in self.lobbies:
           raise UsageException(ctx.channel, 'The lobby has already been started. You can restart the lobby with `?reset`.')
 
-        self.lobbies[ctx.c(hannel.id] = Lobby(self.bot, ctx.channel)
+        self.lobbies[ctx.channel.id] = Lobby(self.bot, ctx.channel)
         await ctx.send('The lobby has been started!')
 
     @command()
@@ -65,12 +65,16 @@ class LobbyCommands(Cog):
         await self.getLobbyThen(ctx, lambda lobby: lobby.add(ctx.author))
 
     @command()
+    async def add(self, ctx, member: discord.Member):
+        await self.getLobbyThen(ctx, lambda lobby: lobby.add(member, author=ctx.author))
+
+    @command()
     async def leave(self, ctx: Context):
         await self.getLobbyThen(ctx, lambda lobby: lobby.remove(ctx.author))
 
     @command()
     async def remove(self, ctx: Context, member: discord.Member):
-        await self.getLobbyThen(ctx, lambda lobby: lobby.remove(member))
+        await self.getLobbyThen(ctx, lambda lobby: lobby.remove(member, author=ctx.author))
 
     @command()
     async def ready(self, ctx: Context):

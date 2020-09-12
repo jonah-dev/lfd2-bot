@@ -19,11 +19,21 @@ class Lobby:
         self.bot = bot
         self.channel: TextChannel = channel
         self.players: List[Player] = []
+        self.leavers: List[Player] = []
         self.shuffleNum: int = 1
         self.shuffles: Optional[List[Tuple[Player, ...]]] = None
         pass
 
-    async def add(self, user: discord.member) -> None:
+    async def add(self, user: discord.member, author: Optional[discord.member]=None) -> None:
+        if author is not None:
+          if (not self.hasJoined(Player(author))):
+            raise UsageException(self.channel, 'You must be in the lobby to add other players.')
+          
+          # Other players cannot add you to the lobby
+          # if you left on your own. (until lobby reset) 
+          if (self.hasLeftBefore(Player(user))):
+            raise UsageException(self.channel, 'This player has recently left the lobby and cannot be added back by other players.')
+
         if self.isFull():
           raise UsageException(self.channel, 'Sorry the game is full. Please wait for someone to leave.')
 
@@ -38,14 +48,19 @@ class Lobby:
           await self.broadcastGameAlmostFull()
         
         await self.channel.send(f'{player.getName()} has joined the game!')
-
-    async def remove(self, user: discord.member) -> None:
+    
+    async def remove(self, user: discord.member, author: Optional[discord.member]=None) -> None:
         if len(self.players) == 0:
           raise UsageException(self.channel, 'There are no players in the game')
 
         player = Player(user)
         if player not in self.players:
           raise UsageException(self.channel, f'Player not in lobby: {player.getName()}')
+        
+        if author is None:
+          # If a user removes themself, then _others_
+          # can't add them back until the lobby resets. 
+          self.leavers.append(player)
 
         self.players.remove(player)
         self.resetShuffles()
@@ -158,6 +173,9 @@ class Lobby:
 
     def hasJoined(self, player: Player) -> bool:
         return player in self.players
+    
+    def hasLeftBefore(self, player):
+        return player in self.leavers
 
     def readyCount(self) -> int:
         return reduce(lambda a, p: a+1 if p.isReady() else a, self.players, 0)
