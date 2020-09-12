@@ -1,7 +1,11 @@
+from typing import Tuple
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 import asyncio
+
+from models.Lobby import Lobby
+from models.Player import Player
 
 name_font = ImageFont.truetype("assets/AmazMegaGrungeOne.ttf", 16)
 shuffle_font = ImageFont.truetype("assets/AmazMegaGrungeOne.ttf", 36)
@@ -26,7 +30,7 @@ ROW_HEIGHT = 42
 class Composite:
     
     @staticmethod
-    async def make(lobby, survivors, infected):
+    async def make(lobby: Lobby, survivors: Tuple[Player, ...], infected: Tuple[Player, ...]) -> str:
         image = blank.copy()
         draw = ImageDraw.Draw(image)
         Composite.__drawShuffleNumber(draw, lobby.shuffleNum)
@@ -48,12 +52,12 @@ class Composite:
         return filename
 
     @staticmethod
-    def __drawShuffleNumber(draw, shuffleNum):
+    def __drawShuffleNumber(draw: ImageDraw.Draw, shuffleNum: int) -> None:
         text = f"Shuffle {shuffleNum}"
         draw.text((10, 10), text, font=shuffle_font, fill=(81, 81, 81, 255))
 
     @staticmethod
-    async def __drawPlayer(draw, composite, player, character, y):
+    async def __drawPlayer(draw: ImageDraw.Draw, composite: Image, player: Player, character: Image, y: int) -> None:
         profile = await player.getAvatar()
         ready = is_ready if player.isReady() else not_ready
         voice = voice_on if player.isInVoice() else voice_off
