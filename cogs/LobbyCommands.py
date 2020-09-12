@@ -80,7 +80,7 @@ class LobbyCommands(Cog):
     async def unready(self, ctx: Context):
         await self.getLobbyThen(ctx, lambda lobby: lobby.unready(ctx.author))
     
-    @commands.command()
+    @command()
     async def flyin(self, ctx):
         await self.getLobbyThen(ctx, lambda lobby: lobby.flyin(ctx.author))
 
