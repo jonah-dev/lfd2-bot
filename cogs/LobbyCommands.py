@@ -6,7 +6,7 @@ import datetime
 import json
 import urllib.request
 
-from models.Lobby import Lobby
+from models.lobby import Lobby
 from utils.UsageException import UsageException
 
 def setup(bot: Bot):

@@ -3,8 +3,8 @@ import discord
 from PIL import Image
 import io
 
-class Player():
 
+class Player:
     def __init__(self, member: discord.Member):
         self.member: discord.Member = member
         self.ready: bool = False
@@ -15,9 +15,9 @@ class Player():
 
     def getName(self) -> str:
         if self.member.display_name == None:
-          return ''
+            return ""
         return self.member.display_name
-    
+
     def getMention(self) -> str:
         return self.member.mention
 
@@ -28,8 +28,8 @@ class Player():
         self.ready = False
 
     async def getAvatar(self) -> Image:
-        if (self.__cachedAvatar is not None):
-          return self.__cachedAvatar
+        if self.__cachedAvatar is not None:
+            return self.__cachedAvatar
 
         url = self.member.avatar_url_as(static_format="png", size=1024)
         data = await url.read()
@@ -49,15 +49,15 @@ class Player():
 
     def __gt__(self, other: object) -> bool:
         return isinstance(other, Player) and self.member.id > other.member.id
-    
+
     def __ge__(self, other: object) -> bool:
         return isinstance(other, Player) and self.member.id >= other.member.id
-    
+
     def __le__(self, other: object) -> bool:
         return isinstance(other, Player) and self.member.id <= other.member.id
-    
+
     def __lt__(self, other: object) -> bool:
         return isinstance(other, Player) and self.member.id < other.member.id
-    
+
     def __hash__(self) -> int:
         return self.member.id
