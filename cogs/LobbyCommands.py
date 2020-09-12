@@ -57,7 +57,7 @@ class LobbyCommands(Cog):
         if ctx.channel.id in self.lobbies:
           raise UsageException(ctx.channel, 'The lobby has already been started. You can restart the lobby with `?reset`.')
 
-        self.lobbies[ctx.c(hannel.id] = Lobby(self.bot, ctx.channel)
+        self.lobbies[ctx.channel.id] = Lobby(self.bot, ctx.channel)
         await ctx.send('The lobby has been started!')
 
     @command()
