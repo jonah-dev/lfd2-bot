@@ -78,6 +78,9 @@ class LobbyCommands(Cog):
         await self.get_lobby_then(ctx, lambda lobby: lobby.add(ctx.author))
 
     @command()
+    async def add(self, ctx, member: Member):
+        await self.get_lobby_then(ctx, lambda lobby: lobby.add(member, author=ctx.author))
+    @command()
     async def leave(self, ctx: Context):
         await self.get_lobby_then(ctx, lambda lobby: lobby.remove(ctx.author))
 
