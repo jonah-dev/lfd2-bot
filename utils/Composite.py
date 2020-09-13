@@ -4,8 +4,7 @@ from PIL import ImageDraw
 from PIL import ImageFont
 import asyncio
 
-from models.Lobby import Lobby
-from models.Player import Player
+from models.player import Player
 
 name_font = ImageFont.truetype("assets/AmazMegaGrungeOne.ttf", 16)
 shuffle_font = ImageFont.truetype("assets/AmazMegaGrungeOne.ttf", 36)
@@ -30,10 +29,10 @@ ROW_HEIGHT = 42
 class Composite:
     
     @staticmethod
-    async def make(lobby: Lobby, survivors: Tuple[Player, ...], infected: Tuple[Player, ...]) -> str:
+    async def make(shuffle_num: int, survivors: Tuple[Player, ...], infected: Tuple[Player, ...], channel_id: int) -> str:
         image = blank.copy()
         draw = ImageDraw.Draw(image)
-        Composite.__drawShuffleNumber(draw, lobby.shuffleNum)
+        Composite.__drawShuffleNumber(draw, shuffle_num)
 
         ops = []
         for index, player in enumerate(survivors):
@@ -47,7 +46,7 @@ class Composite:
           ops.append(Composite.__drawPlayer(draw, image, player, character, y))
 
         await asyncio.wait(ops)
-        filename = f"assets/temp/composite-{lobby.channel.id}.png"
+        filename = f"assets/temp/composite-{channel_id}.png"
         image.save(filename)
         return filename
 
@@ -58,9 +57,9 @@ class Composite:
 
     @staticmethod
     async def __drawPlayer(draw: ImageDraw.Draw, composite: Image, player: Player, character: Image, y: int) -> None:
-        profile = await player.getAvatar()
-        ready = is_ready if player.isReady() else not_ready
-        voice = voice_on if player.isInVoice() else voice_off
+        profile = await player.get_avatar()
+        ready = is_ready if player.is_ready() else not_ready
+        voice = voice_on if player.is_in_voice() else voice_off
 
         y += PLAYER_ONE_START
         composite.paste(ready, (132, y + 11), ready)
@@ -69,7 +68,7 @@ class Composite:
         composite.paste(profile.resize((19,19)), (226, y + 8))
         draw.text(
           (255, y + 11),
-          player.getName(),
+          player.get_name(),
           font=name_font,
           fill=(81, 81, 81, 255)
         )

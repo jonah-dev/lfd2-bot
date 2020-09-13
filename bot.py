@@ -19,7 +19,7 @@ from datetime import datetime
 
 from discord.ext import commands
 
-from models.Player import Player
+from models.player import Player
 
 from utils.UsageException import UsageException
 
@@ -135,7 +135,7 @@ class LFD2Bot(commands.Bot):
         Logically grouped commands can be moved to individual 'cogs'. We need
         to then register them with discord.py. This is the full collection.
         """
-        self.load_extension("cogs.LobbyCommands")
+        self.load_extension("cogs.lobby_commands")
 
     def run(self, *args, **kwargs):
         """

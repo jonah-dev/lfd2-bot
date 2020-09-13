@@ -43,7 +43,7 @@ class Lobby:
         if self.ready_count() == 7:
             await self.broadcast_game_almost_full()
 
-        await self.channel.send(f"{player.getName()} has joined the game!")
+        await self.channel.send(f"{player.get_name()} has joined the game!")
 
     async def remove(self, user: Member) -> None:
         if len(self.players) == 0:
@@ -52,14 +52,14 @@ class Lobby:
         player = Player(user)
         if player not in self.players:
             raise UsageException(
-                self.channel, f"Player not in lobby: {player.getName()}"
+                self.channel, f"Player not in lobby: {player.get_name()}"
             )
 
         self.players.remove(player)
         self.reset_shuffles()
 
         await self.channel.send(
-            f"Succesfully removed: {player.getName()} from the game."
+            f"Succesfully removed: {player.get_name()} from the game."
             + f"\n There are now {str(8 - len(self.players))} spots available"
         )
 
@@ -107,7 +107,7 @@ class Lobby:
                 self.channel, "You cannot ready if you are not in the lobby"
             )
 
-        if player.isReady():
+        if player.is_ready():
             raise UsageException(
                 self.channel,
                 "You're already marked as ready. I can tell you're really excited.",
@@ -117,8 +117,8 @@ class Lobby:
         if ind < 0:
             raise UsageException(self.channel, "Cannot find player")
 
-        self.players[ind].setReady()
-        await self.channel.send(f"{player.getName()} ready!. :white_check_mark:")
+        self.players[ind].set_ready()
+        await self.channel.send(f"{player.get_name()} ready!. :white_check_mark:")
 
     async def unready(self, user: Member) -> None:
         player = Player(user)
@@ -131,8 +131,8 @@ class Lobby:
         if ind < 0:
             raise UsageException(self.channel, "Cannot find player")
 
-        self.players[ind].setUnready()
-        await self.channel.send(f"{player.getName()} unreadied!. :x:")
+        self.players[ind].set_unready()
+        await self.channel.send(f"{player.get_name()} unreadied!. :x:")
 
     async def flyin(self, user):
         self.add(user)
@@ -155,7 +155,7 @@ class Lobby:
 
         team1 = self.shuffles[self.shuffle_num - 1]
         team2 = tuple(sorted([p for p in self.players if p not in team1]))
-        composite = await Composite.make(self, team1, team2)
+        composite = await Composite.make(self.shuffle_num, team1, team2, self.channel.id)
         await self.channel.send(file=File(composite))
         self.shuffle_num += 1
 
@@ -167,15 +167,15 @@ class Lobby:
         if self.ready_count() != 0:
             ready = ""
             for player in self.players:
-                if player.isReady():
-                    ready += f"• {player.getName()}\n"
+                if player.is_ready():
+                    ready += f"• {player.get_name()}\n"
             embed.add_field(name=":white_check_mark: Ready!", value=ready, inline=False)
 
         if self.ready_count() != len(self.players):
             not_ready = ""
             for player in self.players:
-                if not player.isReady():
-                    not_ready += f"• {player.getName()}\n"
+                if not player.is_ready():
+                    not_ready += f"• {player.get_name()}\n"
             embed.add_field(name=":x: Not Ready", value=not_ready, inline=False)
 
         embed.set_footer(
@@ -190,7 +190,7 @@ class Lobby:
         return player in self.players
 
     def ready_count(self) -> int:
-        return reduce(lambda a, p: a + 1 if p.isReady() else a, self.players, 0)
+        return reduce(lambda a, p: a + 1 if p.is_ready() else a, self.players, 0)
 
     def reset_shuffles(self) -> None:
         self.shuffle_num = 1
@@ -229,6 +229,6 @@ class Lobby:
         embed.title = "Left 4 Dead game starting soon!"
         embed.description = "Only one more player is needed for a full lobby.\n"
         for player in self.players:
-            embed.description += f"• {player.getMention()}\n"
+            embed.description += f"• {player.get_mention()}\n"
         embed.description += f"\nJoin {self.channel.mention} to get involved!"
         return embed
