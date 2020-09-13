@@ -13,7 +13,7 @@ from discord.ext.commands import Bot
 
 from models.player import Player
 from utils.composite import draw_composite
-from utils.UsageException import UsageException
+from utils.usage_exception import UsageException
 
 
 class Lobby:

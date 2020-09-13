@@ -8,7 +8,7 @@ from discord.ext import tasks
 from discord.ext.commands import command, Cog, Bot, Context
 
 from models.lobby import Lobby
-from utils.UsageException import UsageException
+from utils.usage_exception import UsageException
 
 
 def setup(bot: Bot):

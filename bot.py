@@ -21,7 +21,7 @@ from discord.ext import commands
 
 from models.player import Player
 
-from utils.UsageException import UsageException
+from utils.usage_exception import UsageException
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger("LFD2Bot")
