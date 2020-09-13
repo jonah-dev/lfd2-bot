@@ -99,13 +99,13 @@ class LFD2Bot(commands.Bot):
             if lag is None:
                 await ctx.send("No lag at this current time")
             else:
-                author = Player(ctx.author).getName()
+                author = Player(ctx.author).get_name()
                 await ctx.send(f"Current lag for {author} is: {lag}ms")
             return
 
         # Need to move this into a "funny commands" cog
         if message.content == "?ped":
-            await ctx.send(f"Current lag for {Player(ctx.author).getName()} is: {0}ms")
+            await ctx.send(f"Current lag for {Player(ctx.author).get_name()} is: {0}ms")
 
         if ctx.command is None:
             return

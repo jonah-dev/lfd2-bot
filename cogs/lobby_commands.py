@@ -99,15 +99,15 @@ class LobbyCommands(Cog):
 
     @command()
     async def numbers(self, ctx: Context):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.showNumbers())
+        await self.get_lobby_then(ctx, lambda lobby: lobby.show_numbers())
 
     @command()
     async def lobby(self, ctx: Context):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.showLobby())
+        await self.get_lobby_then(ctx, lambda lobby: lobby.show_lobby())
 
     @command()
     async def shuffle(self, ctx: Context):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.showNewShuffle())
+        await self.get_lobby_then(ctx, lambda lobby: lobby.show_new_shuffle())
 
     @command()
     async def reset(self, ctx: Context):
