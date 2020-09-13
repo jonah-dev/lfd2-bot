@@ -12,7 +12,7 @@ from discord import VoiceChannel, TextChannel
 from discord.ext.commands import Bot
 
 from models.player import Player
-from utils.Composite import Composite
+from utils.composite import draw_composite
 from utils.UsageException import UsageException
 
 
@@ -155,7 +155,7 @@ class Lobby:
 
         team1 = self.shuffles[self.shuffle_num - 1]
         team2 = tuple(sorted([p for p in self.players if p not in team1]))
-        composite = await Composite.make(self.shuffle_num, team1, team2, self.channel.id)
+        composite = await draw_composite(self.shuffle_num, team1, team2, self.channel.id)
         await self.channel.send(file=File(composite))
         self.shuffle_num += 1
 
