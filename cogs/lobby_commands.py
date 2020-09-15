@@ -129,6 +129,9 @@ class LobbyCommands(Cog):
         if reset_range_start <= now <= reset_range_end:
             daily_fact = self.get_todays_useless_fact()
             for index in self.lobbies:
+                if len(self.lobbies[index].players) == 0:
+                    continue
+
                 channel = self.lobbies[index].channel
                 self.lobbies[index] = Lobby(self.bot, channel)
                 embed = Embed(colour=Colour.orange())
