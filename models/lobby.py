@@ -25,17 +25,21 @@ class Lobby:
         self.shuffle_num: int = 1
         self.shuffles: Optional[List[Tuple[Player, ...]]] = None
 
-    async def add(self, user: Member, author: Optional[Member]=None) -> None:
+    async def add(self, user: Member, author: Optional[Member] = None) -> None:
         if author is not None:
-          if (not self.has_joined(Player(author))):
-            raise UsageException(self.channel, 'You must be in the lobby to add other players.')
-          
-          # Other players cannot add you to the lobby
-          # if you left on your own. (until lobby reset) 
-          if (self.has_left_before(Player(user))):
-            raise UsageException(self.channel, 'This player has recently left the lobby and cannot be added back by other players.')
+            if not self.has_joined(Player(author)):
+                raise UsageException(
+                    self.channel, "You must be in the lobby to add other players."
+                )
 
-        
+            # Other players cannot add you to the lobby
+            # if you left on your own. (until lobby reset)
+            if self.has_left_before(Player(user)):
+                raise UsageException(
+                    self.channel,
+                    "This player has recently left the lobby and cannot be added back by other players.",
+                )
+
         if self.is_full():
             raise UsageException(
                 self.channel,
@@ -56,7 +60,7 @@ class Lobby:
 
         await self.channel.send(f"{player.get_name()} has joined the game!")
 
-    async def remove(self, user: Member, author: Optional[Member]=None) -> None:
+    async def remove(self, user: Member, author: Optional[Member] = None) -> None:
         if len(self.players) == 0:
             raise UsageException(self.channel, "There are no players in the game")
 
@@ -67,9 +71,9 @@ class Lobby:
             )
 
         if author is None:
-          # If a user removes themself, then _others_
-          # can't add them back until the lobby resets. 
-          self.leavers.append(player)
+            # If a user removes themself, then _others_
+            # can't add them back until the lobby resets.
+            self.leavers.append(player)
 
         self.players.remove(player)
         self.reset_shuffles()
@@ -171,7 +175,9 @@ class Lobby:
 
         team1 = self.shuffles[self.shuffle_num - 1]
         team2 = tuple(sorted([p for p in self.players if p not in team1]))
-        composite = await draw_composite(self.shuffle_num, team1, team2, self.channel.id)
+        composite = await draw_composite(
+            self.shuffle_num, team1, team2, self.channel.id
+        )
         await self.channel.send(file=File(composite))
         self.shuffle_num += 1
 
