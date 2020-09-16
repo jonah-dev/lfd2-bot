@@ -114,8 +114,12 @@ class LFD2Bot(commands.Bot):
 
     async def on_command_error(self, context, exception):
         if isinstance(exception, UsageException):
-            await exception.notice()
-            return
+           await exception.notice()
+           return
+
+        if isinstance(exception.__cause__, UsageException):
+           await exception.__cause__.notice()
+           return
 
         await context.send("There was an error during your command :worried:")
         trace = traceback.TracebackException.from_exception(exception.__cause__)
