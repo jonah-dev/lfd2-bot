@@ -19,7 +19,7 @@ class Lobby:
         self.channel: TextChannel = channel
         self.players: List[Player] = []
         self.leavers: List[Player] = []
-        self.finders: Dict[Callable, MatchFinder] = {}
+        self.orderings: Dict[Callable, MatchFinder] = {}
 
     async def add(self, user: Member, author: Optional[Member] = None) -> None:
         if author is not None:
@@ -49,7 +49,7 @@ class Lobby:
             )
 
         self.players.append(player)
-        self.reset_finders()
+        self.reset_orderings()
 
         if self.ready_count() == 7:
             await self.broadcast_game_almost_full()
@@ -72,7 +72,7 @@ class Lobby:
             self.leavers.append(player)
 
         self.players.remove(player)
-        self.reset_finders()
+        self.reset_orderings()
 
         await self.channel.send(
             f"Succesfully removed: {player.get_name()} from the game."
@@ -161,10 +161,10 @@ class Lobby:
                 "Two players are needed to make a match.",
             )
 
-        if order not in self.finders:
-            self.finders[order] = MatchFinder(self.players, order)
+        if order not in self.orderings:
+            self.orderings[order] = MatchFinder(self.players, order)
 
-        next_match = await self.finders[order].get_next_match()
+        next_match = await self.orderings[order].get_next_match()
         if next_match is None:
             raise UsageException(
                 self.channel,
@@ -217,8 +217,8 @@ class Lobby:
     def ready_count(self) -> int:
         return reduce(lambda a, p: a + 1 if p.is_ready() else a, self.players, 0)
 
-    def reset_finders(self) -> None:
-        self.finders = {}
+    def reset_orderings(self) -> None:
+        self.orderings = {}
 
     async def broadcast_game_almost_full(self) -> None:
         destinations = self.get_broadcast_channels()
