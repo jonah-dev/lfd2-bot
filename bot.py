@@ -13,18 +13,12 @@ of Discord's developer studio.
 
 import random
 import os
-import logging
-import traceback
 from datetime import datetime
+from utils.handle import handle
 
 from discord.ext import commands
 
 from models.player import Player
-
-from utils.usage_exception import UsageException
-
-logging.basicConfig(level=logging.ERROR)
-logger = logging.getLogger("LFD2Bot")
 
 
 class LFD2Bot(commands.Bot):
@@ -113,18 +107,7 @@ class LFD2Bot(commands.Bot):
         await self.invoke(ctx)
 
     async def on_command_error(self, context, exception):
-        if isinstance(exception, UsageException):
-           await exception.notice()
-           return
-
-        if isinstance(exception.__cause__, UsageException):
-           await exception.__cause__.notice()
-           return
-
-        await context.send("There was an error during your command :worried:")
-        trace = traceback.TracebackException.from_exception(exception.__cause__)
-        pretty_trace = "".join(trace.format())
-        logger.error('Command: "%s"\n%s', context.message.content, pretty_trace)
+        handle(context, exception)
 
     async def on_ready(self):
         """Lifecycle Event: Bot is initialized and authenticated."""

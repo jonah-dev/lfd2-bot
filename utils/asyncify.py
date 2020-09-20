@@ -5,7 +5,7 @@ from functools import wraps
 def asyncify(fn):
     """
     We have some syncronous IO libraries (e.g. gsheets) and
-    we want to be able to us async/await multitasking while
+    we want to be able to use async/await multitasking while
     they execute. This turns functions into async ones.
     """
 

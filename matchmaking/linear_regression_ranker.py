@@ -11,6 +11,11 @@ from matchmaking.game_data import GameData
 
 @ttl_cache(maxsize=128, ttl=600) # 10 minutes
 async def get_ranker(channel: TextChannel) -> Callable:
+    """
+    This function returns a 'ranker' function. It is meant to be used
+    by matchmaker, e.g. `get_next_match(..., get_ranker(...))`, and it
+    is only this complex so we can capture the channel in the closure. 
+    """
     @ttl_cache(maxsize=128, ttl=600) # 10 minutes
     async def rank(matches: List[Match]):
         scores = await __get_scores(channel)

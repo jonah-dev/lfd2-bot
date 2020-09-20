@@ -1,17 +1,14 @@
+from logging import exception
 import re
 import json
 from datetime import datetime
+from utils.handle import handle
 from utils.usage_exception import UsageException
 from discord.channel import TextChannel
 from gsheets import Sheets
 from cachetools.func import ttl_cache
 from typing import List, Set
 
-from numpy import matrix
-from sklearn.linear_model import LinearRegression
-from statistics import stdev, mean
-
-from models.player import Player
 from utils.asyncify import asyncify
 
 
@@ -51,18 +48,22 @@ class GameData():
     @ttl_cache(maxsize=128, ttl=1800) # 30 minutes
     @staticmethod
     async def fetch(channel: TextChannel):
-        # TODO(stack) Replace with Discord declarative
         url = GameData.__get_url(channel)
-
-        sheets_fetcher = Sheets.from_files('client_secrets.json', 'oath_cache.json')
-        sheets = sheets_fetcher.get(url)
+        sheets_fetcher = Sheets.from_files(
+          'client_secrets.json',
+          'oath_cache.json',
+        )
+        sheets = await asyncify(sheets_fetcher.get(url))
         games: List[Game] = []
-        for row in sheets[1726324783]._values:
-            games.append(Game(
-              datetime.strptime(row[4], "%m/%d/%Y"),
-              Team(json.loads(row[0]), row[1]),
-              Team(json.loads(row[2]), row[3]),
-            ))
+        for row in sheets[1]._values: # Must be the second sheet
+            try:
+                games.append(Game(
+                  datetime.strptime(row[4], "%m/%d/%Y"),
+                  Team(json.loads(row[0]), row[1]),
+                  Team(json.loads(row[2]), row[3]),
+                ))
+            except BaseException as exception:
+                handle(None, exception)
 
         return GameData(games)
       
