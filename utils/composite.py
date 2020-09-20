@@ -1,5 +1,5 @@
 import asyncio
-from typing import Tuple
+from typing import List
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -27,14 +27,14 @@ ROW_HEIGHT = 42
 
 
 async def draw_composite(
-    shuffle_num: int,
-    survivors: Tuple[Player, ...],
-    infected: Tuple[Player, ...],
+    game_num: int,
+    survivors: List[Player],
+    infected: List[Player],
     channel_id: int,
 ) -> str:
     image = blank.copy()
     draw = ImageDraw.Draw(image)
-    draw_shuffle_number(draw, shuffle_num)
+    draw_game_number(draw, game_num)
 
     ops = []
     for index, player in enumerate(survivors):
@@ -53,7 +53,7 @@ async def draw_composite(
     return filename
 
 
-def draw_shuffle_number(draw: ImageDraw.Draw, shuffle_num: int) -> None:
+def draw_game_number(draw: ImageDraw.Draw, shuffle_num: int) -> None:
     text = f"Shuffle {shuffle_num}"
     draw.text((10, 10), text, font=shuffle_font, fill=(81, 81, 81, 255))
 

@@ -1,10 +1,7 @@
 from functools import reduce
-from itertools import combinations
-from math import ceil
 import asyncio
-import random
 import re
-from typing import List, Tuple, Optional
+from typing import Callable, List, Dict, Optional
 
 from discord import File, Embed, Colour
 from discord import Member, Status
@@ -14,7 +11,7 @@ from discord.ext.commands import Bot
 from models.player import Player
 from utils.composite import draw_composite
 from utils.usage_exception import UsageException
-
+from matchmaking.match_finder import MatchFinder
 
 class Lobby:
     def __init__(self, bot: Bot, channel: TextChannel):
@@ -22,8 +19,7 @@ class Lobby:
         self.channel: TextChannel = channel
         self.players: List[Player] = []
         self.leavers: List[Player] = []
-        self.shuffle_num: int = 1
-        self.shuffles: Optional[List[Tuple[Player, ...]]] = None
+        self.finders: Dict[Callable, MatchFinder] = {}
 
     async def add(self, user: Member, author: Optional[Member] = None) -> None:
         if author is not None:
@@ -53,7 +49,7 @@ class Lobby:
             )
 
         self.players.append(player)
-        self.reset_shuffles()
+        self.reset_finders()
 
         if self.ready_count() == 7:
             await self.broadcast_game_almost_full()
@@ -76,7 +72,7 @@ class Lobby:
             self.leavers.append(player)
 
         self.players.remove(player)
-        self.reset_shuffles()
+        self.reset_finders()
 
         await self.channel.send(
             f"Succesfully removed: {player.get_name()} from the game."
@@ -158,28 +154,32 @@ class Lobby:
         self.add(user)
         self.ready(user)
 
-    async def show_new_shuffle(self) -> None:
+    async def show_next_match(self, order: Callable) -> None:
         if len(self.players) < 2:
             raise UsageException(
                 self.channel,
-                "LFD2 Bot needs at least two players in the lobby to shuffle teams.",
+                "Two players are needed to make a match.",
             )
 
-        if self.shuffles is None:
-            self.shuffles = self.get_all_combinations()
+        if order not in self.finders:
+            self.finders[order] = MatchFinder(self.players, order)
 
-        if self.shuffle_num > len(self.shuffles):
+        next_match = await self.finders[order].get_next_match()
+        if next_match is None:
             raise UsageException(
-                self.channel, "You've already seen all possible shuffles"
+                self.channel,
+                "You've already seen all possible matches"
             )
 
-        team1 = self.shuffles[self.shuffle_num - 1]
-        team2 = tuple(sorted([p for p in self.players if p not in team1]))
+        (number, match) = next_match
+        (team_one, team_two) = match
         composite = await draw_composite(
-            self.shuffle_num, team1, team2, self.channel.id
+            number,
+            team_one,
+            team_two,
+            self.channel.id,
         )
         await self.channel.send(file=File(composite))
-        self.shuffle_num += 1
 
     def get_lobby_message(self) -> Embed:
         color = Colour.green() if self.is_full() else Colour.orange()
@@ -217,20 +217,8 @@ class Lobby:
     def ready_count(self) -> int:
         return reduce(lambda a, p: a + 1 if p.is_ready() else a, self.players, 0)
 
-    def reset_shuffles(self) -> None:
-        self.shuffle_num = 1
-        self.shuffles = None
-
-    def get_all_combinations(self) -> List[Tuple[Player, ...]]:
-        team_size = ceil(len(self.players) // 2)
-        teams = list()
-        for team in combinations(self.players, team_size):
-            team = tuple(sorted(team))
-            other_team = tuple(sorted([p for p in self.players if p not in team]))
-            if team not in teams and other_team not in teams:
-                teams.append(team)
-        random.shuffle(teams)
-        return teams
+    def reset_finders(self) -> None:
+        self.finders = {}
 
     async def broadcast_game_almost_full(self) -> None:
         destinations = self.get_broadcast_channels()

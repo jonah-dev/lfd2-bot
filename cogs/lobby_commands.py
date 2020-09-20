@@ -1,6 +1,7 @@
 import datetime
 import json
 import urllib.request
+from random import shuffle
 from typing import Dict
 
 from discord import Embed, Colour, Member
@@ -110,7 +111,7 @@ class LobbyCommands(Cog):
 
     @command()
     async def shuffle(self, ctx: Context):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.show_new_shuffle())
+        await self.get_lobby_then(ctx, lambda lobby: lobby.show_next_match(shuffle))
 
     @command()
     async def reset(self, ctx: Context):
