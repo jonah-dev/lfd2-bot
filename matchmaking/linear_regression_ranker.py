@@ -1,5 +1,6 @@
 from cachetools.func import ttl_cache
-from typing import List, Dict
+from typing import Callable, List, Dict
+from discord.channel import TextChannel
 
 from numpy import matrix
 from sklearn.linear_model import LinearRegression
@@ -9,18 +10,21 @@ from matchmaking.match_finder import Match
 from matchmaking.game_data import GameData
 
 @ttl_cache(maxsize=128, ttl=600) # 10 minutes
-async def rank(matches: List[Match]):
-    scores = await __get_scores()
-    def mean_balance(match: Match) -> float:
-        (team_one, team_two) = match
-        avg_one = mean([scores[p.member.id] for p in team_one])
-        avg_two = mean([scores[p.member.id] for p in team_two])
-        return abs(avg_one - avg_two)
+async def get_ranker(channel: TextChannel) -> Callable:
+    @ttl_cache(maxsize=128, ttl=600) # 10 minutes
+    async def rank(matches: List[Match]):
+        scores = await __get_scores(channel)
+        def mean_balance(match: Match) -> float:
+            (team_one, team_two) = match
+            avg_one = mean([scores[p.member.id] for p in team_one])
+            avg_two = mean([scores[p.member.id] for p in team_two])
+            return abs(avg_one - avg_two)
 
-    matches.sort(key=mean_balance)
+        matches.sort(key=mean_balance)
+    return rank
 
-async def __get_scores() -> Dict[int, float]:
-    data = await GameData.fetch() 
+async def __get_scores(channel: TextChannel) -> Dict[int, float]:
+    data = await GameData.fetch(channel) 
     model = LinearRegression().fit(
       __get_training_data(data),
       __get_target_values(data),

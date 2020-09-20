@@ -1,5 +1,8 @@
+import re
 import json
 from datetime import datetime
+from utils.usage_exception import UsageException
+from discord.channel import TextChannel
 from gsheets import Sheets
 from cachetools.func import ttl_cache
 from typing import List, Set
@@ -47,12 +50,12 @@ class GameData():
 
     @ttl_cache(maxsize=128, ttl=1800) # 30 minutes
     @staticmethod
-    async def fetch():
+    async def fetch(channel: TextChannel):
         # TODO(stack) Replace with Discord declarative
-        sheet_id = '1886KNfDRp-RGRnRkAbb8IQHTvQFHw_xcavz_2pXmIsg'
-        sheet_url = f'https://docs.google.com/spreadsheets/d/{sheet_id}'
+        url = GameData.__get_url(channel)
+
         sheets_fetcher = Sheets.from_files('client_secrets.json', 'oath_cache.json')
-        sheets = sheets_fetcher.get(sheet_url)
+        sheets = sheets_fetcher.get(url)
         games: List[Game] = []
         for row in sheets[1726324783]._values:
             games.append(Game(
@@ -62,6 +65,13 @@ class GameData():
             ))
 
         return GameData(games)
+      
+    @staticmethod
+    def __get_url(channel: TextChannel) -> str:
+        if channel.topic is None:
+            raise UsageException(channel, "You must specify a `@games(...)` in the channel topic to use this.")
+        id = re.findall(r"^\?games #([^\s]+)", channel.topic, re.M)
+        return f'https://docs.google.com/spreadsheets/d/{id}'
 
     def get_all_players(self) -> Set[int]:
         players: Set[int] = set()

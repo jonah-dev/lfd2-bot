@@ -116,7 +116,7 @@ class LobbyCommands(Cog):
     
     @command()
     async def ranked(self, ctx: Context):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.show_next_match(rank))
+        await self.get_lobby_then(ctx, lambda lobby: lobby.show_next_match(rank(ctx.channel)))
 
     @command()
     async def reset(self, ctx: Context):
