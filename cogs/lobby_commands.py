@@ -1,5 +1,6 @@
 import datetime
 import json
+from matchmaking.linear_regression_ranker import rank
 import urllib.request
 from random import shuffle
 from typing import Dict
@@ -112,6 +113,10 @@ class LobbyCommands(Cog):
     @command()
     async def shuffle(self, ctx: Context):
         await self.get_lobby_then(ctx, lambda lobby: lobby.show_next_match(shuffle))
+    
+    @command()
+    async def ranked(self, ctx: Context):
+        await self.get_lobby_then(ctx, lambda lobby: lobby.show_next_match(rank))
 
     @command()
     async def reset(self, ctx: Context):
