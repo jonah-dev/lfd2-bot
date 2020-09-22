@@ -1,8 +1,8 @@
 import logging
-import traceback
-from typing import Optional, Text
+from traceback import TracebackException
+from typing import Optional
 
-from discord.channel import TextChannel
+from discord.ext.commands.context import Context
 
 from utils.usage_exception import UsageException
 
@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger("LFD2Bot")
 
 
-async def handle(channel: Optional[TextChannel], exception: BaseException):
+async def handle(context: Optional[Context], exception: BaseException):
     if isinstance(exception, UsageException):
         await exception.notice()
         return
@@ -20,15 +20,14 @@ async def handle(channel: Optional[TextChannel], exception: BaseException):
         return
 
     if exception.__cause__ is not None:
-        trace = traceback.TracebackException.from_exception(exception.__cause__)
+        trace = TracebackException.from_exception(exception.__cause__)
     else:
-        trace = traceback.TracebackException.from_exception(exception)
+        trace = TracebackException.from_exception(exception)
 
-    pretty_trace = "".join(trace.format())
-    if channel is TextChannel:
-        await channel.send("There was an error during your command :worried:")
-        logger.error('Command: "%s"\n%s', channel.message.content, pretty_trace)
+    stack = "".join(trace.format())
+    if context is not None:
+        await context.send("There was an error during your command :worried:")
+        logger.error('Command: "%s"\n%s', context.message.content, stack)
         return
-    
-    logger.error('Command: <unkown>\n%s', pretty_trace)
 
+    logger.error("Command: <unkown>\n%s", stack)

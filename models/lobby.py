@@ -11,7 +11,7 @@ from discord.ext.commands import Bot
 from models.player import Player
 from utils.composite import draw_composite
 from utils.usage_exception import UsageException
-from matchmaking.match_finder import MatchFinder
+from matchmaking.match_finder import MatchFinder, Match
 
 class Lobby:
     def __init__(self, bot: Bot, channel: TextChannel):
@@ -151,8 +151,14 @@ class Lobby:
         await self.channel.send(f"{player.get_name()} unreadied!. :x:")
 
     async def flyin(self, user):
-        self.add(user)
-        self.ready(user)
+        await self.add(user)
+        await self.ready(user)
+
+    async def get_next_match(self, order: Callable) -> Optional[Match]:
+        if order not in self.orderings:
+            self.orderings[order] = await MatchFinder.new(self.players, order)
+
+        return self.orderings[order].get_next_match()
 
     async def show_next_match(self, order: Callable) -> None:
         if len(self.players) < 2:
@@ -161,10 +167,7 @@ class Lobby:
                 "Two players are needed to make a match.",
             )
 
-        if order not in self.orderings:
-            self.orderings[order] = MatchFinder(self.players, order)
-
-        next_match = await self.orderings[order].get_next_match()
+        next_match = self.get_next_match(order)
         if next_match is None:
             raise UsageException(
                 self.channel,
@@ -222,20 +225,23 @@ class Lobby:
 
     async def broadcast_game_almost_full(self) -> None:
         destinations = self.get_broadcast_channels()
-        message = self.get_broadcast_message()
+        if not destinations:
+            return
+
         broadcasts = []
+        message = self.get_broadcast_message()
         for channel in self.bot.get_all_channels():
             if isinstance(channel, TextChannel) and channel.name in destinations:
                 broadcasts.append(channel.send(embed=message))
 
-        if len(broadcasts) > 0:
+        if broadcasts:
             await asyncio.wait(broadcasts)
 
     def get_broadcast_channels(self) -> List[TextChannel]:
         if self.channel.topic is None:
             return []
 
-        return re.findall(r"^\?broadcast #([^\s]+)", self.channel.topic, re.M)
+        return re.findall(r"^@broadcast\(#([^\s]+)\)", self.channel.topic, re.M)
 
     def get_broadcast_message(self) -> Embed:
         embed = Embed(colour=Colour.orange())

@@ -1,4 +1,5 @@
 import asyncio
+import atexit
 from typing import List
 
 from PIL import Image, ImageDraw, ImageFont
@@ -80,3 +81,15 @@ async def draw_player(
         font=name_font,
         fill=(81, 81, 81, 255),
     )
+
+
+@atexit.register
+def close_files():
+    blank.close()
+    infected_character.close()
+    is_ready.close()
+    not_ready.close()
+    voice_on.close()
+    voice_off.close()
+    for i in survivor_characters:
+        i.close()

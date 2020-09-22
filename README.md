@@ -3,7 +3,7 @@ A tool to help form lobbies for Left 4 Dead 2 within Discord channels
 
 # Requirements
 
-- Python 3.7^
+- Python 3.8^
 
 ## Python Modules
 - discord

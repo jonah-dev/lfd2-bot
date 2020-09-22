@@ -14,6 +14,8 @@ of Discord's developer studio.
 import random
 import os
 from datetime import datetime
+
+from discord.ext.commands.context import Context
 from utils.handle import handle
 
 from discord.ext import commands
@@ -106,8 +108,8 @@ class LFD2Bot(commands.Bot):
 
         await self.invoke(ctx)
 
-    async def on_command_error(self, context, exception):
-        handle(context, exception)
+    async def on_command_error(self, context: Context, exception):
+        await handle(context, exception)
 
     async def on_ready(self):
         """Lifecycle Event: Bot is initialized and authenticated."""
