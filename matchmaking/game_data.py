@@ -45,8 +45,8 @@ class GameData():
     def __init__(self, games: List[Game]):
         self.games = games
 
-    @ttl_cache(maxsize=128, ttl=1800) # 30 minutes
     @staticmethod
+    @ttl_cache(maxsize=128, ttl=1800) # 30 minutes
     async def fetch(channel: TextChannel):
         url = GameData.__get_url(channel)
         sheets_fetcher = Sheets.from_files(
@@ -79,6 +79,6 @@ class GameData():
     def get_all_players(self) -> Set[int]:
         players: Set[int] = set()
         for g in self.games:
-            players.union(set(g.team_one.players))
-            players.union(set(g.team_two.players))
+            players.update(g.team_one.players)
+            players.update(g.team_two.players)
         return players

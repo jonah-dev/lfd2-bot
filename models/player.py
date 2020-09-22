@@ -15,8 +15,6 @@ class Player:
         return self.ready
 
     def get_name(self) -> str:
-        if self.member.display_name is None:
-            return ""
         return self.member.display_name
 
     def get_mention(self) -> str:
