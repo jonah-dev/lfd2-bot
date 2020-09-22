@@ -13,6 +13,7 @@ from utils.composite import draw_composite
 from utils.usage_exception import UsageException
 from matchmaking.match_finder import MatchFinder, Match
 
+
 class Lobby:
     def __init__(self, bot: Bot, channel: TextChannel):
         self.bot = bot
@@ -170,8 +171,7 @@ class Lobby:
         next_match = self.get_next_match(order)
         if next_match is None:
             raise UsageException(
-                self.channel,
-                "You've already seen all possible matches"
+                self.channel, "You've already seen all possible matches"
             )
 
         (number, match) = next_match
