@@ -126,12 +126,12 @@ class TestLobby(AsyncTestCase):
     async def test_lobby_embed(self):
         lobby = Lobby(bot(), channel())
         embed = lobby.get_lobby_message()
-        assert embed.footer.text == "There are 8 spots still available!"
+        assert embed.footer.text == "There are 8 spots remaining!"
         assert embed.colour == Colour.orange()
 
         await lobby.add(player := member())
         embed = lobby.get_lobby_message()
-        assert embed.footer.text == "There are 7 spots still available!"
+        assert embed.footer.text == "There are 7 spots remaining!"
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 1
         assert embed.fields[0].name == ":x: Not Ready"
@@ -139,7 +139,7 @@ class TestLobby(AsyncTestCase):
 
         await lobby.ready(player)
         embed = lobby.get_lobby_message()
-        assert embed.footer.text == "There are 7 spots still available!"
+        assert embed.footer.text == "There are 7 spots remaining!"
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 1
         assert embed.fields[0].name == ":white_check_mark: Ready!"
@@ -148,16 +148,21 @@ class TestLobby(AsyncTestCase):
         for _ in range(7):
             await lobby.flyin(member())
         embed = lobby.get_lobby_message()
-        assert embed.footer.text == "There are 0 spots still available!"
+        assert embed.footer.text == "This lobby is full!"
         assert embed.colour == Colour.green()
         assert len(embed.fields) == 1
         assert embed.fields[0].name == ":white_check_mark: Ready!"
 
         await lobby.unready(player)
         embed = lobby.get_lobby_message()
-        assert embed.footer.text == "There are 0 spots still available!"
+        assert embed.footer.text == "This lobby is full!"
         assert embed.colour == Colour.green()
         assert len(embed.fields) == 2
+
+        await lobby.remove(player)
+        embed = lobby.get_lobby_message()
+        assert embed.footer.text == "There's one spot remaining!"
+        assert embed.colour == Colour.orange()
 
     async def test_numbers(self):
         discord_bot = bot()

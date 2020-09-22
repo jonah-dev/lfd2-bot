@@ -10,8 +10,8 @@ def get_shuffler() -> Callable:
     by matchmaker, e.g. `get_next_match(..., get_ranker(...))`, and it
     is only this complex so we can capture the channel in the closure.
     """
+
     async def shuffle(matches: List[Match]):
         random.shuffle(matches)
-    
+
     return shuffle
-      

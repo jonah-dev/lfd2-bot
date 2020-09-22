@@ -75,10 +75,8 @@ class GameData:
     @staticmethod
     def __get_url(channel: TextChannel) -> str:
         if channel.topic is None:
-            raise UsageException(
-                channel,
-                "You must specify a `@games(...)` in the channel topic.",
-            )
+            raise UsageException.directive_missing(channel, 'games')
+
         id = re.findall(r"^\?games #([^\s]+)", channel.topic, re.M)
         return f"https://docs.google.com/spreadsheets/d/{id}"
 
@@ -87,4 +85,5 @@ class GameData:
         for g in self.games:
             players.update(g.team_one.players)
             players.update(g.team_two.players)
+
         return players

@@ -1,8 +1,8 @@
 # Relevant constants can live here
-class Constants():
+class Constants:
     # Teams
-    INFECTED = 'Infected'
-    SURVIVOR = 'Survivor'
+    INFECTED = "Infected"
+    SURVIVOR = "Survivor"
 
     def getTeamOptions(self):
         return [self.INFECTED, self.SURVIVOR]

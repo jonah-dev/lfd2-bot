@@ -23,7 +23,6 @@ def teardown(_bot: Bot):
 
 
 class LobbyCommands(Cog):
-
     def __init__(self, bot: Bot):
         self.bot: Bot = bot
         self.lobbies: Dict[int, Lobby] = {}
@@ -40,7 +39,9 @@ class LobbyCommands(Cog):
             self.lobbies[ctx.channel.id].channel = ctx.channel
             return await do_command(self.lobbies[ctx.channel.id])
 
-        await ctx.send("You haven't started a lobby. Use `?start` to open a new lobby.")
+        await ctx.send(
+            "You haven't started a lobby. Use `?start` to open a new lobby."
+        )
 
     # -------- Commands --------
 
@@ -52,14 +53,18 @@ class LobbyCommands(Cog):
         embed.add_field(name="?leave", value="Leaves the lobby", inline=False)
         embed.add_field(name="?lobby", value="Views the lobby", inline=False)
         embed.add_field(name="?ready", value="Readies your user", inline=False)
-        embed.add_field(name="?unready", value="Unreadies your user", inline=False)
+        embed.add_field(
+            name="?unready", value="Unreadies your user", inline=False
+        )
         embed.add_field(
             name="?shuffle",
-            value="Creates a randomly shuffled set of teams with the given lobby.",
+            value="Provides randomly decided teams.",
             inline=False,
         )
         embed.add_field(
-            name="?remove [player]", value="Removes player by tag", inline=False
+            name="?remove [player]",
+            value="Removes player by tag",
+            inline=False,
         )
         embed.add_field(name="?reset", value="Resets the lobby", inline=False)
         await ctx.send(embed=embed)
@@ -67,10 +72,7 @@ class LobbyCommands(Cog):
     @command()
     async def start(self, ctx: Context):
         if ctx.channel.id in self.lobbies:
-            raise UsageException(
-                ctx.channel,
-                "The lobby has already been started. You can restart the lobby with `?reset`.",
-            )
+            raise UsageException.lobby_already_started(ctx.channel)
 
         self.lobbies[ctx.channel.id] = Lobby(self.bot, ctx.channel)
         await ctx.send("The lobby has been started!")
@@ -81,14 +83,19 @@ class LobbyCommands(Cog):
 
     @command()
     async def add(self, ctx, member: Member):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.add(member, author=ctx.author))
+        await self.get_lobby_then(
+            ctx, lambda lobby: lobby.add(member, author=ctx.author)
+        )
+
     @command()
     async def leave(self, ctx: Context):
         await self.get_lobby_then(ctx, lambda lobby: lobby.remove(ctx.author))
 
     @command()
     async def remove(self, ctx: Context, member: Member):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.remove(member))
+        await self.get_lobby_then(
+            ctx, lambda lobby: lobby.remove(member, author=ctx.author)
+        )
 
     @command()
     async def ready(self, ctx: Context):
@@ -112,11 +119,15 @@ class LobbyCommands(Cog):
 
     @command()
     async def shuffle(self, ctx: Context):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.show_next_match(get_shuffler))
-    
+        await self.get_lobby_then(
+            ctx, lambda lobby: lobby.show_next_match(get_shuffler)
+        )
+
     @command()
     async def ranked(self, ctx: Context):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.show_next_match(get_ranker(ctx.channel)))
+        await self.get_lobby_then(
+            ctx, lambda lobby: lobby.show_next_match(get_ranker(ctx.channel))
+        )
 
     @command()
     async def reset(self, ctx: Context):
@@ -141,9 +152,13 @@ class LobbyCommands(Cog):
                 channel = self.lobbies[index].channel
                 self.lobbies[index] = Lobby(self.bot, channel)
                 embed = Embed(colour=Colour.orange())
-                embed.set_author(name=f"Daily Update - {str(datetime.date.today())}")
+                embed.set_author(
+                    name=f"Daily Update - {str(datetime.date.today())}"
+                )
                 embed.add_field(
-                    name="Lobby has been cleared!", value=daily_fact, inline=False
+                    name="Lobby has been cleared!",
+                    value=daily_fact,
+                    inline=False,
                 )
                 await channel.send(embed=embed)
 
