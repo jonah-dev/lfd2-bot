@@ -16,7 +16,6 @@ def get_ranker(channel: TextChannel) -> Callable:
     by matchmaker, e.g. `get_next_match(..., get_ranker(...))`, and it
     is only this complex so we can capture the channel in the closure.
     """
-
     async def ranker(matches: List[Match]):
         scores = await __get_scores(channel)
 
@@ -27,7 +26,6 @@ def get_ranker(channel: TextChannel) -> Callable:
             return abs(avg_one - avg_two)
 
         matches.sort(key=mean_balance)
-
     return ranker
 
 
