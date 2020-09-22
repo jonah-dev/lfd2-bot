@@ -9,6 +9,8 @@ from discord.ext.commands import command, Cog, Bot, Context
 
 from models.lobby import Lobby
 from utils.usage_exception import UsageException
+from matchmaking.linear_regression_ranker import get_ranker
+from matchmaking.random_shuffler import get_shuffler
 
 
 def setup(bot: Bot):
@@ -110,7 +112,11 @@ class LobbyCommands(Cog):
 
     @command()
     async def shuffle(self, ctx: Context):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.show_new_shuffle())
+        await self.get_lobby_then(ctx, lambda lobby: lobby.show_next_match(get_shuffler))
+    
+    @command()
+    async def ranked(self, ctx: Context):
+        await self.get_lobby_then(ctx, lambda lobby: lobby.show_next_match(get_ranker(ctx.channel)))
 
     @command()
     async def reset(self, ctx: Context):
