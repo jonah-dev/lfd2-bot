@@ -47,11 +47,7 @@ class GameData:
         self.games = games
 
     @staticmethod
-<<<<<<< HEAD
     @ttl_cache(maxsize=128, ttl=1800)  # 30 minutes
-=======
-    @ttl_cache(maxsize=128, ttl=1800) # 30 minutes
->>>>>>> 9527105ef50f8f6eebdcbed2e12e94b594303157
     async def fetch(channel: TextChannel):
         url = GameData.__get_url(channel)
         sheets_fetcher = Sheets.from_files(
