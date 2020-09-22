@@ -63,7 +63,7 @@ class LFD2Bot(commands.Bot):
                 ?join - Joins the lobby \n
                 ?leave - Leaves the lobby \n
                 ?lobby - View the lobby \n
-                ?order66 - Issues a ping that marks the beginning of the game \n
+                ?order66 - Issues a ping to begin the game \n
                 ?lag - Calculates your current lag \n
                 ?ped - FOOTBALL SZN \n
                 ?ready - Ready up! \n
@@ -101,7 +101,9 @@ class LFD2Bot(commands.Bot):
 
         # Need to move this into a "funny commands" cog
         if message.content == "?ped":
-            await ctx.send(f"Current lag for {Player(ctx.author).get_name()} is: {0}ms")
+            await ctx.send(
+                f"Current lag for {Player(ctx.author).get_name()} is: {0}ms"
+            )
 
         if ctx.command is None:
             return
@@ -136,8 +138,9 @@ class LFD2Bot(commands.Bot):
     @staticmethod
     def is_admin(author):
         """
-        For reliability and safety reasons, there are some admin controls loosely
-        gated by this check. These are the Discord IDs of primary admin users.
+        For reliability and safety reasons, there are some admin controls
+        loosely gated by this check. These are the Discord IDs of primary
+        admin users.
         """
         return author.id in [147788154831634434, 236938533179228162]
 

@@ -1,12 +1,18 @@
 {
   "editor.formatOnSave": true,
   "python.formatting.provider": "black",
-
   "python.linting.enabled": true,
   "python.linting.flake8Enabled": true,
+  "python.formatting.blackArgs": [
+    "--line-length",
+    "79"
+  ],
   "python.linting.mypyEnabled": false,
   "python.linting.pylintEnabled": false,
-  
+  "python.linting.flake8Args": [
+    "--max-line-length=79",
+    // "--ignore=E402",
+  ],
   "python.testing.unittestEnabled": true,
   "python.testing.nosetestsEnabled": false,
   "python.testing.pytestEnabled": false,

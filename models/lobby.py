@@ -25,29 +25,19 @@ class Lobby:
     async def add(self, user: Member, author: Optional[Member] = None) -> None:
         if author is not None:
             if not self.has_joined(Player(author)):
-                raise UsageException(
-                    self.channel, "You must be in the lobby to add other players."
-                )
+                raise UsageException.adder_must_join(self.channel)
 
             # Other players cannot add you to the lobby
             # if you left on your own. (until lobby reset)
             if self.has_left_before(Player(user)):
-                raise UsageException(
-                    self.channel,
-                    "This player has recently left the lobby and cannot be added back by other players.",
-                )
+                raise UsageException.leaver_not_added(self.channel)
 
         if self.is_full():
-            raise UsageException(
-                self.channel,
-                "Sorry the game is full. Please wait for someone to leave.",
-            )
+            raise UsageException.game_is_full(self.channel)
 
         player = Player(user)
         if self.has_joined(player):
-            raise UsageException(
-                self.channel, "You are already in the game you pepega."
-            )
+            raise UsageException.already_joined(self.channel)
 
         self.players.append(player)
         self.reset_orderings()
@@ -57,15 +47,10 @@ class Lobby:
 
         await self.channel.send(f"{player.get_name()} has joined the game!")
 
-    async def remove(self, user: Member, author: Optional[Member] = None) -> None:
-        if len(self.players) == 0:
-            raise UsageException(self.channel, "There are no players in the game")
-
+    async def remove(self, user: Member, author: Optional[Member] = None):
         player = Player(user)
         if player not in self.players:
-            raise UsageException(
-                self.channel, f"Player not in lobby: {player.get_name()}"
-            )
+            raise UsageException.not_in_lobby(self.channel, player)
 
         if author is None:
             # If a user removes themself, then _others_
@@ -82,19 +67,24 @@ class Lobby:
 
     async def show_lobby(self) -> None:
         if len(self.players) < 1:
-            raise UsageException(self.channel, "There are no players in the game")
+            raise UsageException.empty_lobby(self.channel)
 
         await self.channel.send(embed=self.get_lobby_message())
 
     async def show_numbers(self) -> None:
         lobby_count = len(self.players)
         if lobby_count == 8:
-            raise UsageException(self.channel, "I think we got numbers!")
+            await self.channel.send("I think we got numbers!")
+            return
+
+        if lobby_count == 0:
+            await self.channel.send("We absolutely do **not** have numbers!")
+            return
 
         voice_count = 0
         for channel in self.bot.get_all_channels():
             if isinstance(channel, VoiceChannel):
-                voice_count += len(list(filter(lambda m: not (m.bot), channel.members)))
+                voice_count += sum(not m.bot for m in channel.members)
 
         online_count = 0
         for guild_member in self.channel.guild.members:
@@ -102,52 +92,42 @@ class Lobby:
                 online_count += 1
 
         if voice_count >= 8:
-            raise UsageException(
-                self.channel,
-                f"There's {voice_count} in chat but only {lobby_count} in the lobby. C'mon!",
+            return await self.channel.send(
+                f"There's {voice_count} in chat but"
+                f" only {lobby_count} in the lobby. C'mon!",
             )
 
         if online_count >= 8:
-            raise UsageException(
-                self.channel,
-                f"There's {online_count} online and you're telling me we only have {lobby_count} in the lobby???",
+            return await self.channel.send(
+                f"There's {online_count} online and you're"
+                f" telling me we only have {lobby_count} in the lobby???",
             )
 
         await self.channel.send(
-            f"There's {online_count} online, {voice_count} in chat, and only {lobby_count} in the lobby."
+            f"There's {online_count} online, {voice_count} in chat,"
+            f" and only {lobby_count} in the lobby."
         )
 
     async def ready(self, user: Member) -> None:
         player = Player(user)
         if player not in self.players:
-            raise UsageException(
-                self.channel, "You cannot ready if you are not in the lobby"
-            )
+            raise UsageException.join_the_lobby_first(self.channel)
 
         if player.is_ready():
-            raise UsageException(
-                self.channel,
-                "You're already marked as ready. I can tell you're really excited.",
-            )
+            raise UsageException.already_ready(self.channel)
 
         ind = self.players.index(player)
-        if ind < 0:
-            raise UsageException(self.channel, "Cannot find player")
-
         self.players[ind].set_ready()
-        await self.channel.send(f"{player.get_name()} ready!. :white_check_mark:")
+        await self.channel.send(
+            f"{player.get_name()} ready!. :white_check_mark:",
+        )
 
     async def unready(self, user: Member) -> None:
         player = Player(user)
         if player not in self.players:
-            raise UsageException(
-                self.channel, "You cannot unready if you are not in the lobby"
-            )
+            raise UsageException.join_the_lobby_first(self.channel)
 
         ind = self.players.index(player)
-        if ind < 0:
-            raise UsageException(self.channel, "Cannot find player")
-
         self.players[ind].set_unready()
         await self.channel.send(f"{player.get_name()} unreadied!. :x:")
 
@@ -163,16 +143,11 @@ class Lobby:
 
     async def show_next_match(self, order: Callable) -> None:
         if len(self.players) < 2:
-            raise UsageException(
-                self.channel,
-                "Two players are needed to make a match.",
-            )
+            raise UsageException.not_enough_for_match(self.channel)
 
         next_match = self.get_next_match(order)
         if next_match is None:
-            raise UsageException(
-                self.channel, "You've already seen all possible matches"
-            )
+            raise UsageException.seen_all_matches(self.channel)
 
         (number, match) = next_match
         (team_one, team_two) = match
@@ -194,18 +169,32 @@ class Lobby:
             for player in self.players:
                 if player.is_ready():
                     ready += f"• {player.get_name()}\n"
-            embed.add_field(name=":white_check_mark: Ready!", value=ready, inline=False)
+            embed.add_field(
+                name=":white_check_mark: Ready!",
+                value=ready,
+                inline=False,
+            )
 
         if self.ready_count() != len(self.players):
             not_ready = ""
             for player in self.players:
                 if not player.is_ready():
                     not_ready += f"• {player.get_name()}\n"
-            embed.add_field(name=":x: Not Ready", value=not_ready, inline=False)
+            embed.add_field(
+                name=":x: Not Ready",
+                value=not_ready,
+                inline=False,
+            )
 
-        embed.set_footer(
-            text=f"There are {str(8 - len(self.players))} spots still available!"
-        )
+        remaining_spots = str(8 - len(self.players))
+        if remaining_spots == 0:
+            text = "This lobby is full!"
+        elif remaining_spots == 1:
+            text = "There's one spot remaining!"
+        else:
+            text = f"There are {remaining_spots} spots remaining!"
+
+        embed.set_footer(text=text)
         return embed
 
     def is_full(self) -> bool:
@@ -218,7 +207,11 @@ class Lobby:
         return player in self.leavers
 
     def ready_count(self) -> int:
-        return reduce(lambda a, p: a + 1 if p.is_ready() else a, self.players, 0)
+        return reduce(
+            lambda a, p: a + 1 if p.is_ready() else a,
+            self.players,
+            0,
+        )
 
     def reset_orderings(self) -> None:
         self.orderings = {}
@@ -231,7 +224,10 @@ class Lobby:
         broadcasts = []
         message = self.get_broadcast_message()
         for channel in self.bot.get_all_channels():
-            if isinstance(channel, TextChannel) and channel.name in destinations:
+            if (
+                isinstance(channel, TextChannel)
+                and channel.name in destinations
+            ):
                 broadcasts.append(channel.send(embed=message))
 
         if broadcasts:
@@ -241,12 +237,16 @@ class Lobby:
         if self.channel.topic is None:
             return []
 
-        return re.findall(r"^@broadcast\(#([^\s]+)\)", self.channel.topic, re.M)
+        return re.findall(
+            r"^@broadcast\(#([^\s]+)\)", self.channel.topic, re.M
+        )
 
     def get_broadcast_message(self) -> Embed:
         embed = Embed(colour=Colour.orange())
         embed.title = "Left 4 Dead game starting soon!"
-        embed.description = "Only one more player is needed for a full lobby.\n"
+        embed.description = (
+            "Only one more player is needed for a full lobby.\n"
+        )
         for player in self.players:
             embed.description += f"• {player.get_mention()}\n"
         embed.description += f"\nJoin {self.channel.mention} to get involved!"
