@@ -186,7 +186,7 @@ class Lobby:
                 inline=False,
             )
 
-        remaining_spots = str(8 - len(self.players))
+        remaining_spots = 8 - len(self.players)
         if remaining_spots == 0:
             text = "This lobby is full!"
         elif remaining_spots == 1:
