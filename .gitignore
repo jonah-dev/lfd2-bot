@@ -130,6 +130,8 @@ dmypy.json
 
 # Configs
 config.json
+client_secrets.json
+oath_cache.json
 
 # Content
 assets/temp/*

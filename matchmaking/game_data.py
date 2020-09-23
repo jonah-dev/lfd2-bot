@@ -77,7 +77,7 @@ class GameData:
         if channel.topic is None:
             raise UsageException.directive_missing(channel, 'games')
 
-        id = re.findall(r"^\?games #([^\s]+)", channel.topic, re.M)
+        id = re.findall(r"^\?games\(([^\s]+)\)", channel.topic, re.M)
         return f"https://docs.google.com/spreadsheets/d/{id}"
 
     def get_all_players(self) -> Set[int]:
