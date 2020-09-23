@@ -47,38 +47,47 @@ class GameData:
         self.games = games
 
     @staticmethod
-    @ttl_cache(maxsize=128, ttl=1800)  # 30 minutes
+    # @ttl_cache(maxsize=128, ttl=1800)  # 30 minutes
     async def fetch(channel: TextChannel):
-        url = GameData.__get_url(channel)
-        sheets_fetcher = Sheets.from_files(
-            "client_secrets.json",
-            "oath_cache.json",
-        )
-        sheets = await asyncify(sheets_fetcher.get(url))
-        games: List[Game] = []
-        # Must be the second sheet
-        # Skip headers
-        for row in sheets[1]._values[0:]:
-            try:
-                games.append(
-                    Game(
-                        datetime.strptime(row[4], "%m/%d/%Y"),
-                        Team(json.loads(row[0]), row[1]),
-                        Team(json.loads(row[2]), row[3]),
-                    )
-                )
-            except BaseException as exception:
-                handle(None, exception)
+        try:
+            url = GameData.__get_url(channel)
+        except BaseException as exception:
+            await handle(None, exception)
+            raise UsageException.directive_missing(channel, "games")
 
-        return GameData(games)
+        try:
+            sheets_fetcher = Sheets.from_files(
+                "client_secrets.json",
+                "oath_cache.json",
+            )
+            sheets = sheets_fetcher.get(url)
+            games: List[Game] = []
+            # Must be the first sheet
+            # Skip headers
+            for row in sheets._sheets[0]._values[1:]:
+                try:
+                    games.append(
+                        Game(
+                            datetime.strptime(row[4], "%m/%d/%Y"),
+                            Team(json.loads(row[0]), row[1]),
+                            Team(json.loads(row[2]), row[3]),
+                        )
+                    )
+                except BaseException as exception:
+                    await handle(None, exception)
+
+            return GameData(games)
+        except BaseException as exception:
+            await handle(None, exception)
+            raise UsageException.game_sheet_not_loaded(channel, url)
 
     @staticmethod
     def __get_url(channel: TextChannel) -> str:
         if channel.topic is None:
-            raise UsageException.directive_missing(channel, 'games')
+            raise UsageException.directive_missing(channel, "games")
 
-        id = re.findall(r"^\?games\(([^\s]+)\)", channel.topic, re.M)
-        return f"https://docs.google.com/spreadsheets/d/{id}"
+        id = re.findall(r"^@games\(([^\s]+)\)", channel.topic, re.M)
+        return f"https://docs.google.com/spreadsheets/d/{id[0]}"
 
     def get_all_players(self) -> Set[int]:
         players: Set[int] = set()

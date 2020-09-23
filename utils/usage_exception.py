@@ -86,3 +86,10 @@ class UsageException(Exception):
             channel,
             f"Please specify `@{directive}(...)` in the channel topic.",
         )
+
+    @staticmethod
+    def game_sheet_not_loaded(channel: TextChannel, url: str):
+        return UsageException(
+            channel,
+            "The following sheet could not be loaded or parsed." f"\n{url}",
+        )

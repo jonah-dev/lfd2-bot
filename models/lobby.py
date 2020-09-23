@@ -145,7 +145,7 @@ class Lobby:
         if len(self.players) < 2:
             raise UsageException.not_enough_for_match(self.channel)
 
-        next_match = self.get_next_match(order)
+        next_match = await self.get_next_match(order)
         if next_match is None:
             raise UsageException.seen_all_matches(self.channel)
 
