@@ -31,7 +31,7 @@ def get_ranker(channel: TextChannel) -> Callable:
     return ranker
 
 
-@ttl_cache(maxsize=128, ttl=600)  # 30 minutes
+# @ttl_cache(maxsize=128, ttl=600)  # 30 minutes
 async def __get_scores(channel: TextChannel) -> Dict[int, float]:
     data = await GameData.fetch(channel)
     model = LinearRegression().fit(
