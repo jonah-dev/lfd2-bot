@@ -1,13 +1,17 @@
-from cachetools.func import ttl_cache
+from datetime import datetime
 from typing import Callable, List, Dict
-from discord.channel import TextChannel
 
+from cachetools.func import ttl_cache
+from discord.channel import TextChannel
 from numpy import matrix
 from sklearn.linear_model import LinearRegression
 from statistics import stdev, mean
 
 from matchmaking.match_finder import Match
 from matchmaking.game_data import GameData
+
+
+DECAY_INTERVAL_DAYS: int = 30
 
 
 def get_ranker(channel: TextChannel) -> Callable:
@@ -37,6 +41,7 @@ async def get_scores(channel: TextChannel) -> Dict[int, float]:
     model = LinearRegression().fit(
         __get_training_data(data),
         __get_target_values(data),
+        __get_sample_weights(data),
     )
 
     scores = model.coef_[0]
@@ -64,3 +69,12 @@ def __get_training_data(data: GameData) -> matrix:
 
 def __get_target_values(data: GameData) -> matrix:
     return matrix([[g.get_percent_difference()] for g in data.games])
+
+
+def __get_sample_weights(data: GameData) -> matrix:
+    weights = []
+    for game in data.games:
+        time_since = datetime.now() - game.date
+        weight = 1 / 2 ** (time_since.days / DECAY_INTERVAL_DAYS)
+        weights.append(weight)
+    return weights
