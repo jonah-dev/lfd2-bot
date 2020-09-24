@@ -190,7 +190,7 @@ class TestLobby(AsyncTestCase):
                 await lobby.flyin(member())
 
             seen = set()
-            for _ in range(34):  # 35 times: (8 choose 4) / 2
+            for _ in range(35):  # 35 times: (8 choose 4) / 2
                 (_, (one, two)) = await lobby.get_next_match(order)
                 assert (one, two) not in seen
                 assert (two, one) not in seen

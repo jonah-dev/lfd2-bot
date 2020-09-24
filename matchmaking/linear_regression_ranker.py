@@ -18,7 +18,7 @@ def get_ranker(channel: TextChannel) -> Callable:
     """
 
     async def ranker(matches: List[Match]):
-        scores = await __get_scores(channel)
+        scores = await get_scores(channel)
 
         def mean_balance(match: Match) -> float:
             (team_one, team_two) = match
@@ -32,7 +32,7 @@ def get_ranker(channel: TextChannel) -> Callable:
 
 
 # @ttl_cache(maxsize=128, ttl=600)  # 30 minutes
-async def __get_scores(channel: TextChannel) -> Dict[int, float]:
+async def get_scores(channel: TextChannel) -> Dict[int, float]:
     data = await GameData.fetch(channel)
     model = LinearRegression().fit(
         __get_training_data(data),

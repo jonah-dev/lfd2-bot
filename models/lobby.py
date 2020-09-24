@@ -12,6 +12,7 @@ from models.player import Player
 from utils.composite import draw_composite
 from utils.usage_exception import UsageException
 from matchmaking.match_finder import MatchFinder, Match
+from matchmaking.linear_regression_ranker import get_scores
 
 
 class Lobby:
@@ -158,6 +159,32 @@ class Lobby:
             self.channel.id,
         )
         await self.channel.send(file=File(composite))
+
+    async def show_ranking(self, filter_lobby: bool):
+        scores = await get_scores(self.channel)
+        scores = scores.items()
+        scores = sorted(scores, key=lambda item: item[1], reverse=True)
+        embed = Embed(colour=Colour.blurple())
+        embed.title = "Lobby Rankings"
+        rank = 1
+        for user_id, score in scores:
+            user = self.bot.get_user(user_id)
+            if user is None:
+                continue
+
+            if filter_lobby and Player(user) not in self.players:
+                continue
+
+            embed.add_field(name=f"{rank}. {user}", value=score, inline=False)
+            rank += 1
+
+        if len(embed.fields) == 0:
+            embed.add_field(
+                name="No players",
+                value="No players in the lobby (or channel) have a ranking.",
+            )
+
+        await self.channel.send(embed=embed)
 
     def get_lobby_message(self) -> Embed:
         color = Colour.green() if self.is_full() else Colour.orange()

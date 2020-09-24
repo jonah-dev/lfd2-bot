@@ -1,3 +1,4 @@
+from typing import List
 from models.player import Player
 from discord import TextChannel
 
@@ -92,4 +93,17 @@ class UsageException(Exception):
         return UsageException(
             channel,
             "The following sheet could not be loaded or parsed." f"\n{url}",
+        )
+
+    @staticmethod
+    def unexpected_option(
+        channel: TextChannel,
+        actual: str,
+        expected: List[str],
+    ):
+        expected = ", ".join(expected)
+        return UsageException(
+            channel,
+            f"Unexpected option provided: {actual}"
+            f"\nExpected one of [{expected}]",
         )

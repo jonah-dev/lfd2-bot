@@ -30,6 +30,6 @@ class MatchFinder:
         if self.match_num >= len(self.matches):
             return None
 
+        (team_one, team_two) = self.matches[self.match_num]
         self.match_num += 1
-        (team_one, team_two) = self.matches[self.match_num - 1]
         return (self.match_num, (team_one, team_two))
