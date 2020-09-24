@@ -27,7 +27,7 @@ class MatchFinder:
         self.matches: List[Match] = matches
 
     def get_next_match(self) -> Optional[Tuple[int, Match]]:
-        if self.match_num >= len(self.matches) - 1:
+        if self.match_num >= len(self.matches):
             return None
 
         self.match_num += 1
