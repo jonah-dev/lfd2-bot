@@ -125,14 +125,20 @@ class LobbyCommands(Cog):
         )
 
     @command()
-    async def ranked(self, ctx: Context, option: str):
+    async def ranked(self, ctx: Context):
+        await self.get_lobby_then(
+            ctx,
+            lambda lobby: lobby.show_next_match(get_ranker(ctx.channel)),
+        )
+
+    @command()
+    async def leaderboard(self, ctx: Context, option: str):
         then = option_switch(
             ctx.channel,
             option,
             {
-                "list": lambda l: l.show_ranking(filter_lobby=False),
-                "list-lobby": lambda l: l.show_ranking(filter_lobby=True),
-                None: lambda l: l.show_next_match(get_ranker(ctx.channel)),
+                "lobby": lambda l: l.show_ranking(filter_lobby=True),
+                None: lambda l: lambda l: l.show_ranking(filter_lobby=False),
             },
         )
 
