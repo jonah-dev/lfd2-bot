@@ -132,13 +132,13 @@ class LobbyCommands(Cog):
         )
 
     @command()
-    async def leaderboard(self, ctx: Context, option: str):
+    async def leaderboard(self, ctx: Context, option: str = None):
         then = option_switch(
             ctx.channel,
             option,
             {
                 "lobby": lambda l: l.show_ranking(filter_lobby=True),
-                None: lambda l: lambda l: l.show_ranking(filter_lobby=False),
+                None: lambda l: l.show_ranking(filter_lobby=False),
             },
         )
 
