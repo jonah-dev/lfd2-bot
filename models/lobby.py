@@ -38,7 +38,9 @@ class Lobby:
 
         player = Player(user)
         if self.has_joined(player):
-            raise UsageException.already_joined(self.channel)
+            raise UsageException.already_joined(
+                self.channel, author is not None
+            )
 
         self.players.append(player)
         self.reset_orderings()
@@ -51,7 +53,7 @@ class Lobby:
     async def remove(self, user: Member, author: Optional[Member] = None):
         player = Player(user)
         if player not in self.players:
-            raise UsageException.not_in_lobby(self.channel, player)
+            raise UsageException.not_in_lobby(self.channel)
 
         if author is None:
             # If a user removes themself, then _others_
