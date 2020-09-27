@@ -139,10 +139,12 @@ class Lobby:
         await self.ready(user)
 
     async def get_next_match(self, order: Callable) -> Optional[Match]:
-        if order not in self.orderings:
-            self.orderings[order] = await MatchFinder.new(self.players, order)
+        if order.__name__ not in self.orderings:
+            self.orderings[order.__name__] = await MatchFinder.new(
+                self.players, order
+            )
 
-        return self.orderings[order].get_next_match()
+        return self.orderings[order.__name__].get_next_match()
 
     async def show_next_match(self, order: Callable) -> None:
         if len(self.players) < 2:
