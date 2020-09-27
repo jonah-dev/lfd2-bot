@@ -10,6 +10,6 @@ def option_switch(channel: TextChannel, option, cases: Dict[str, Any]):
             options = ["None"]
         else:
             options = filter(cases.keys())
-        raise UsageException.unexpected_option(channel, options)
+        raise UsageException.unexpected_option(channel, option, options)
 
     return cases[option]

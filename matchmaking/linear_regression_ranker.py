@@ -50,8 +50,15 @@ async def get_scores(channel: TextChannel) -> Dict[int, float]:
 
     player_scores = {}
     for i, player in enumerate(data.get_all_players()):
-        player_scores[player] = (scores[i] - average) / std_dev
+        score = (scores[i] - average) / std_dev
+        player_scores[player] = __normalize(score)
     return player_scores
+
+
+def __normalize(score: float) -> int:
+    score += 2
+    score *= 1000
+    return int(score)
 
 
 def __get_training_data(data: GameData) -> matrix:

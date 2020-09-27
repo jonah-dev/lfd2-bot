@@ -34,16 +34,18 @@ class UsageException(Exception):
         )
 
     @staticmethod
-    def already_joined(channel: TextChannel):
-        return UsageException(
-            channel,
-            "Sorry the game is full. Please wait for someone to leave.",
-        )
+    def already_joined(channel: TextChannel, from_other: bool):
+        if from_other:
+            return UsageException(
+                channel, "This player is already in the lobby."
+            )
+
+        return UsageException(channel, "You are already in the lobby.")
 
     @staticmethod
     def not_in_lobby(channel: TextChannel, player: Player):
         return UsageException(
-            channel, f"Player not in lobby: {player.get_name()}"
+            channel, f"This player is not in the lobby: {player.get_name()}"
         )
 
     @staticmethod
