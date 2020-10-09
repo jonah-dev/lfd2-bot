@@ -44,6 +44,13 @@ class LobbyCommands(Cog):
             "You haven't started a lobby. Use `?start` to open a new lobby."
         )
 
+    async def get_or_create_lobby_then(self, ctx: Context, do_command) -> None:
+        if ctx.channel.id not in self.lobbies:
+            self.lobbies[ctx.channel.id] = Lobby(self.bot, ctx.channel)
+            await ctx.send("The lobby has been started!")
+        self.lobbies[ctx.channel.id].channel = ctx.channel
+        return await do_command(self.lobbies[ctx.channel.id])
+
     # -------- Commands --------
 
     @command()
@@ -80,7 +87,9 @@ class LobbyCommands(Cog):
 
     @command()
     async def join(self, ctx: Context):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.add(ctx.author))
+        await self.get_or_create_lobby_then(
+            ctx, lambda lobby: lobby.add(ctx.author)
+        )
 
     @command()
     async def add(self, ctx, member: Member):
@@ -108,7 +117,9 @@ class LobbyCommands(Cog):
 
     @command()
     async def flyin(self, ctx):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.flyin(ctx.author))
+        await self.get_or_create_lobby_then(
+            ctx, lambda lobby: lobby.flyin(ctx.author)
+        )
 
     @command()
     async def numbers(self, ctx: Context):
