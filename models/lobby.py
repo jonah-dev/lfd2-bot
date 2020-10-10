@@ -1,7 +1,7 @@
 from functools import reduce
 import asyncio
 import re
-from typing import Callable, List, Dict, Optional
+from typing import Callable, List, Dict, Optional, Tuple
 
 from discord import File, Embed, Colour
 from discord import Member, Status
@@ -33,9 +33,6 @@ class Lobby:
             if self.has_left_before(Player(user)):
                 raise UsageException.leaver_not_added(self.channel)
 
-        if self.is_full():
-            raise UsageException.game_is_full(self.channel)
-
         player = Player(user)
         if self.has_joined(player):
             raise UsageException.already_joined(
@@ -43,7 +40,6 @@ class Lobby:
             )
 
         self.players.append(player)
-        self.reset_orderings()
 
         if self.ready_count() == 7:
             await self.broadcast_game_almost_full()
@@ -61,7 +57,6 @@ class Lobby:
             self.leavers.append(player)
 
         self.players.remove(player)
-        self.reset_orderings()
 
         await self.channel.send(
             f"Succesfully removed: {player.get_name()} from the game."
@@ -119,11 +114,20 @@ class Lobby:
         if player.is_ready():
             raise UsageException.already_ready(self.channel)
 
+        if self.is_ready():
+            raise UsageException.game_is_full(self.channel)
+
         ind = self.players.index(player)
         self.players[ind].set_ready()
+        self.reset_orderings()
         await self.channel.send(
             f"{player.get_name()} ready!. :white_check_mark:",
         )
+
+        if self.is_ready():
+            title = f"Game starting in ({self.channel.mention}))"
+            embed = self.get_lobby_message(mention=True, title=title)
+            await self.channel.send(embed=embed)
 
     async def unready(self, user: Member) -> None:
         player = Player(user)
@@ -132,17 +136,26 @@ class Lobby:
 
         ind = self.players.index(player)
         self.players[ind].set_unready()
+        self.reset_orderings()
         await self.channel.send(f"{player.get_name()} unreadied!. :x:")
 
     async def flyin(self, user):
         await self.add(user)
         await self.ready(user)
 
+    def get_players(self) -> Tuple[List[Player], List[Player]]:
+        ready = []
+        alternates = []
+        for p in self.players:
+            (ready if p.is_ready() else alternates).append(p)
+
+        return ready, alternates
+
     async def get_next_match(self, order: Callable) -> Optional[Match]:
         if order.__name__ not in self.orderings:
-            self.orderings[order.__name__] = await MatchFinder.new(
-                self.players, order
-            )
+            ready, _ = self.get_players()
+            match_finder = await MatchFinder.new(ready, order)
+            self.orderings[order.__name__] = match_finder
 
         return self.orderings[order.__name__].get_next_match()
 
@@ -190,36 +203,35 @@ class Lobby:
 
         await self.channel.send(embed=embed)
 
-    def get_lobby_message(self) -> Embed:
-        color = Colour.green() if self.is_full() else Colour.orange()
+    def get_lobby_message(
+        self,
+        mention: bool = False,
+        title: Optional[str] = None,
+    ) -> Embed:
+        color = Colour.green() if self.is_ready() else Colour.orange()
         embed = Embed(colour=color)
-        embed.title = f"Left 4 Dead Lobby ({len(self.players)}/8)"
+        embed.title = title or f"Lobby ({len(self.players)})"
 
-        if self.ready_count() != 0:
-            ready = ""
-            for player in self.players:
-                if player.is_ready():
-                    ready += f"• {player.get_name()}\n"
+        ready, alternates = self.get_players()
+
+        if ready:
+            print = "get_mention" if mention else "get_name"
             embed.add_field(
-                name=":white_check_mark: Ready!",
-                value=ready,
+                name=f"Players ({len(ready)})",
+                value="".join([f"• {(getattr(p, print))()}\n" for p in ready]),
                 inline=False,
             )
 
-        if self.ready_count() != len(self.players):
-            not_ready = ""
-            for player in self.players:
-                if not player.is_ready():
-                    not_ready += f"• {player.get_name()}\n"
+        if alternates:
             embed.add_field(
-                name=":x: Not Ready",
-                value=not_ready,
+                name=f"Alternates ({len(alternates)})",
+                value="".join([f"• {p.get_name()}\n" for p in alternates]),
                 inline=False,
             )
 
-        remaining_spots = 8 - len(self.players)
+        remaining_spots = 8 - self.ready_count()
         if remaining_spots == 0:
-            text = "This lobby is full!"
+            text = "Use `?shuffle` or `?ranked` to start building teams."
         elif remaining_spots == 1:
             text = "There's one spot remaining!"
         else:
@@ -227,9 +239,6 @@ class Lobby:
 
         embed.set_footer(text=text)
         return embed
-
-    def is_full(self) -> bool:
-        return len(self.players) == 8
 
     def has_joined(self, player: Player) -> bool:
         return player in self.players
@@ -243,6 +252,9 @@ class Lobby:
             self.players,
             0,
         )
+
+    def is_ready(self) -> bool:
+        return self.ready_count() == 8
 
     def reset_orderings(self) -> None:
         self.orderings = {}
