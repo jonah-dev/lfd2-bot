@@ -30,7 +30,7 @@ class UsageException(Exception):
     def game_is_full(channel: TextChannel):
         return UsageException(
             channel,
-            "Sorry the game is full. Please wait for someone to leave.",
+            "Sorry the game is full. Please wait for someone to unready.",
         )
 
     @staticmethod
