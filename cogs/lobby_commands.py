@@ -132,7 +132,7 @@ class LobbyCommands(Cog):
     @command()
     async def shuffle(self, ctx: Context):
         await self.get_lobby_then(
-            ctx, lambda lobby: lobby.show_next_match(get_shuffler)
+            ctx, lambda lobby: lobby.show_next_match(get_shuffler())
         )
 
     @command()

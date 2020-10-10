@@ -66,7 +66,7 @@ class UsageException(Exception):
     @staticmethod
     def not_enough_for_match(channel: TextChannel):
         return UsageException(
-            channel, "Two players are needed to make a match."
+            channel, "You need 8 ready players to start a match."
         )
 
     @staticmethod

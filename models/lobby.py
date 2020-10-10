@@ -160,7 +160,7 @@ class Lobby:
         return self.orderings[order.__name__].get_next_match()
 
     async def show_next_match(self, order: Callable) -> None:
-        if len(self.players) < 2:
+        if not self.is_ready():
             raise UsageException.not_enough_for_match(self.channel)
 
         next_match = await self.get_next_match(order)
