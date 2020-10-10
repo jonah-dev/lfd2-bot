@@ -56,7 +56,7 @@ async def game_data(_channel) -> GameData:
     return GameData(
         [
             Game(
-                datetime.now(),
+                datetime.today(),
                 Team([id() for _ in range(4)], randint(1000, 3000)),
                 Team([id() for _ in range(4)], randint(1000, 3000)),
             )
