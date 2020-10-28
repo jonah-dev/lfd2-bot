@@ -77,11 +77,9 @@ def __get_target_values(data: GameData) -> matrix:
 
 def __get_weights(data: GameData) -> matrix:
     decay_weights = __get_decay_weights(data)
-    total_game_points = [
-        g.team_one.score + g.team_two.score for g in data.games
-    ]
+    game_points = [g.team_one.score + g.team_two.score for g in data.games]
     return [
-        decay * score for decay, score in zip(decay_weights, total_game_points)
+        decay * points for decay, points in zip(decay_weights, game_points)
     ]
     return decay_weights
 
