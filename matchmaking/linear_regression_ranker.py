@@ -9,6 +9,7 @@ from matchmaking.game_data import GameData
 
 
 GAME_WEIGHT_HALFLIFE_DAYS: int = 60
+AVERAGE_SCORE: int = 2000
 
 
 def get_ranker(channel: TextChannel) -> Callable:
@@ -23,8 +24,12 @@ def get_ranker(channel: TextChannel) -> Callable:
 
         def mean_balance(match: Match) -> float:
             (team_one, team_two) = match
-            avg_one = mean([scores.get(p.member.id, 0) for p in team_one])
-            avg_two = mean([scores.get(p.member.id, 0) for p in team_two])
+            avg_one = mean(
+                [scores.get(p.member.id, AVERAGE_SCORE) for p in team_one]
+            )
+            avg_two = mean(
+                [scores.get(p.member.id, AVERAGE_SCORE) for p in team_two]
+            )
             return abs(avg_one - avg_two)
 
         matches.sort(key=mean_balance)
@@ -53,8 +58,8 @@ async def get_scores(channel: TextChannel) -> Dict[int, float]:
 
 
 def __normalize(score: float) -> int:
-    score += 2
     score *= 1000
+    score += AVERAGE_SCORE
     return int(score)
 
 
