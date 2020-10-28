@@ -38,7 +38,7 @@ async def get_scores(channel: TextChannel) -> Dict[int, float]:
     model = LinearRegression().fit(
         __get_training_data(data),
         __get_target_values(data),
-        __get_decay_weights(data),
+        __get_weights(data),
     )
 
     scores = model.coef_[0]
@@ -73,6 +73,17 @@ def __get_training_data(data: GameData) -> matrix:
 
 def __get_target_values(data: GameData) -> matrix:
     return matrix([[g.get_percent_difference()] for g in data.games])
+
+
+def __get_weights(data: GameData) -> matrix:
+    decay_weights = __get_decay_weights(data)
+    total_game_points = [
+        g.team_one.score + g.team_two.score for g in data.games
+    ]
+    return [
+        decay * score for decay, score in zip(decay_weights, total_game_points)
+    ]
+    return decay_weights
 
 
 def __get_decay_weights(data: GameData) -> matrix:
