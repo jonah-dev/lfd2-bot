@@ -23,8 +23,8 @@ def get_ranker(channel: TextChannel) -> Callable:
 
         def mean_balance(match: Match) -> float:
             (team_one, team_two) = match
-            avg_one = mean([scores.get(p.member.id, 0.5) for p in team_one])
-            avg_two = mean([scores.get(p.member.id, 0.5) for p in team_two])
+            avg_one = mean([scores.get(p.member.id, 0) for p in team_one])
+            avg_two = mean([scores.get(p.member.id, 0) for p in team_two])
             return abs(avg_one - avg_two)
 
         matches.sort(key=mean_balance)
