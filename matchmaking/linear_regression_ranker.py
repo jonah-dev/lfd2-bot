@@ -81,7 +81,6 @@ def __get_weights(data: GameData) -> matrix:
     return [
         decay * points for decay, points in zip(decay_weights, game_points)
     ]
-    return decay_weights
 
 
 def __get_decay_weights(data: GameData) -> matrix:
