@@ -87,10 +87,10 @@ class TestLobby(AsyncTestCase):
 
     async def test_full_lobby(self):
         lobby = Lobby(bot(), channel())
-        await lobby.flyin(first := member())
+        await lobby.ready(first := member())
         assert not lobby.is_ready()
         for _ in range(7):
-            await lobby.flyin(member())
+            await lobby.ready(member())
         assert lobby.is_ready()
 
         await lobby.add(alternate := member())
@@ -133,12 +133,14 @@ class TestLobby(AsyncTestCase):
         assert lobby.ready_count() == 0
 
         await lobby.remove(player)
-        with self.assertRaises(UsageException):
-            await lobby.ready(player)
-        with self.assertRaises(UsageException):
-            await lobby.unready(player)
 
-        await lobby.flyin(player)
+        await lobby.ready(player)
+        assert lobby.ready_count() == 1
+
+        await lobby.unready(player)
+        assert lobby.ready_count() == 0
+
+        await lobby.ready(player)
         assert lobby.ready_count() == 1
 
     async def test_lobby_embed(self):
@@ -173,7 +175,7 @@ class TestLobby(AsyncTestCase):
         assert str(player.mention) in embed.fields[0].value
 
         for _ in range(7):
-            await lobby.flyin(member())
+            await lobby.ready(member())
         embed = lobby.get_lobby_message()
         assert embed.title == "Lobby (8)"
         assert "Use `?shuffle` or `?ranked`" in embed.footer.text
@@ -207,7 +209,7 @@ class TestLobby(AsyncTestCase):
         assert len(embed.fields) == 2
         assert embed.fields[1].name == "Alternates (100)"
 
-        await lobby.flyin(member())
+        await lobby.ready(member())
         embed = lobby.get_lobby_message()
         assert embed.title == "Lobby (108)"
         assert "Use `?shuffle` or `?ranked`" in embed.footer.text
@@ -220,7 +222,7 @@ class TestLobby(AsyncTestCase):
         lobby = Lobby(bot(), ctx := channel())
         lobby.get_lobby_message = AsyncMock()
         for _ in range(8):
-            await lobby.flyin(member())
+            await lobby.ready(member())
         lobby.get_lobby_message.assert_called_with(
             mention=True,
             title=f"Game starting in ({ctx.mention}))",
@@ -249,7 +251,7 @@ class TestLobby(AsyncTestCase):
         async def test_with_ordering(order: Callable):
             lobby = Lobby(bot(), channel())
             for _ in range(8):
-                await lobby.flyin(member())
+                await lobby.ready(member())
 
             seen = set()
             for _ in range(35):  # 35 times: (8 choose 4) / 2

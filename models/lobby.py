@@ -2,14 +2,16 @@ from functools import reduce
 import asyncio
 import re
 from typing import Callable, List, Dict, Optional, Tuple
+from asyncio.locks import Lock
 
-from discord import File, Embed, Colour
+from discord import Message, File, Embed, Colour
 from discord import Member, Status
 from discord import VoiceChannel, TextChannel
 from discord.ext.commands import Bot
 
 from models.player import Player
 from utils.composite import draw_composite
+from utils.handle import handle
 from utils.usage_exception import UsageException
 from matchmaking.match_finder import MatchFinder, Match
 from matchmaking.linear_regression_ranker import get_scores
@@ -22,6 +24,8 @@ class Lobby:
         self.players: List[Player] = []
         self.leavers: List[Player] = []
         self.orderings: Dict[Callable, MatchFinder] = {}
+        self.temp_messages: List[Message] = []
+        self.show_lobby_lock: Lock = Lock()
 
     async def add(self, user: Member, author: Optional[Member] = None) -> None:
         if author is not None:
@@ -44,7 +48,7 @@ class Lobby:
         if self.ready_count() == 7:
             await self.broadcast_game_almost_full()
 
-        await self.channel.send(f"{player.get_name()} has joined the game!")
+        await self.show(title=f"{player.get_name()} has joined the game!")
 
     async def remove(self, user: Member, author: Optional[Member] = None):
         player = Player(user)
@@ -58,16 +62,29 @@ class Lobby:
 
         self.players.remove(player)
 
-        await self.channel.send(
-            f"Succesfully removed: {player.get_name()} from the game."
-            + f"\n There are now {str(8 - len(self.players))} spots available"
-        )
+        await self.show(title=f"{player.get_name()} has left the lobby.")
 
-    async def show_lobby(self) -> None:
-        if len(self.players) < 1:
-            raise UsageException.empty_lobby(self.channel)
+    async def show(
+        self,
+        mention: bool = False,
+        title: Optional[str] = None,
+        temp: bool = True,
+    ) -> None:
+        await self.show_lobby_lock.acquire()
+        try:
+            ops = [self.__delMsgSafe(m) for m in self.temp_messages]
+            self.temp_messages = []
+            if len(ops) > 0:
+                await asyncio.wait(ops)
 
-        await self.channel.send(embed=self.get_lobby_message())
+            embed = self.get_lobby_message(title=title, mention=mention)
+            msg = await self.channel.send(embed=embed)
+            if temp:
+                self.temp_messages.append(msg)
+        except BaseException as exception:
+            await handle(self.channel, exception)
+        finally:
+            self.show_lobby_lock.release()
 
     async def show_numbers(self) -> None:
         lobby_count = len(self.players)
@@ -109,7 +126,7 @@ class Lobby:
     async def ready(self, user: Member) -> None:
         player = Player(user)
         if player not in self.players:
-            raise UsageException.join_the_lobby_first(self.channel)
+            await self.add(user)
 
         if player.is_ready():
             raise UsageException.already_ready(self.channel)
@@ -120,14 +137,13 @@ class Lobby:
         ind = self.players.index(player)
         self.players[ind].set_ready()
         self.reset_orderings()
-        await self.channel.send(
-            f"{player.get_name()} ready!. :white_check_mark:",
-        )
 
         if self.is_ready():
             title = f"Game starting in ({self.channel.mention}))"
             embed = self.get_lobby_message(mention=True, title=title)
             await self.channel.send(embed=embed)
+        else:
+            await self.show(title=f"{player.get_name()} is ready!")
 
     async def unready(self, user: Member) -> None:
         player = Player(user)
@@ -137,11 +153,8 @@ class Lobby:
         ind = self.players.index(player)
         self.players[ind].set_unready()
         self.reset_orderings()
-        await self.channel.send(f"{player.get_name()} unreadied!. :x:")
 
-    async def flyin(self, user):
-        await self.add(user)
-        await self.ready(user)
+        await self.show(title=f"{player.get_name()} is not ready.")
 
     def get_players(self) -> Tuple[List[Player], List[Player]]:
         ready = []
@@ -294,3 +307,9 @@ class Lobby:
             embed.description += f"• {player.get_mention()}\n"
         embed.description += f"\nJoin {self.channel.mention} to get involved!"
         return embed
+
+    async def __delMsgSafe(self, msg: Message) -> None:
+        try:
+            await msg.delete()
+        except BaseException as exception:
+            await handle(self.channel, exception)
