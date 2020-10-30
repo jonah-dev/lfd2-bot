@@ -44,7 +44,7 @@ class Lobby:
         if self.ready_count() == 7:
             await self.broadcast_game_almost_full()
 
-        await self.channel.send(f"{player.get_name()} has joined the game!")
+        await self.show(title=f"{player.get_name()} has joined the game!")
 
     async def remove(self, user: Member, author: Optional[Member] = None):
         player = Player(user)
@@ -58,16 +58,10 @@ class Lobby:
 
         self.players.remove(player)
 
-        await self.channel.send(
-            f"Succesfully removed: {player.get_name()} from the game."
-            + f"\n There are now {str(8 - len(self.players))} spots available"
-        )
+        await self.show(title=f"{player.get_name()} has left the lobby.")
 
-    async def show_lobby(self) -> None:
-        if len(self.players) < 1:
-            raise UsageException.empty_lobby(self.channel)
-
-        await self.channel.send(embed=self.get_lobby_message())
+    async def show(self, title: Optional[str] = None) -> None:
+        await self.channel.send(embed=self.get_lobby_message(), title=title)
 
     async def show_numbers(self) -> None:
         lobby_count = len(self.players)
@@ -120,14 +114,13 @@ class Lobby:
         ind = self.players.index(player)
         self.players[ind].set_ready()
         self.reset_orderings()
-        await self.channel.send(
-            f"{player.get_name()} ready!. :white_check_mark:",
-        )
 
         if self.is_ready():
             title = f"Game starting in ({self.channel.mention}))"
             embed = self.get_lobby_message(mention=True, title=title)
             await self.channel.send(embed=embed)
+        else:
+            await self.show(title=f"{player.get_name()} is ready!")
 
     async def unready(self, user: Member) -> None:
         player = Player(user)
@@ -137,7 +130,8 @@ class Lobby:
         ind = self.players.index(player)
         self.players[ind].set_unready()
         self.reset_orderings()
-        await self.channel.send(f"{player.get_name()} unreadied!. :x:")
+
+        await self.show(title=f"{player.get_name()} is not ready.")
 
     def get_players(self) -> Tuple[List[Player], List[Player]]:
         ready = []

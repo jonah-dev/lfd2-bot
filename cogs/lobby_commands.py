@@ -110,7 +110,7 @@ class LobbyCommands(Cog):
     @command()
     async def lobby(self, ctx: Context):
         lobby = self.get_lobby(ctx)
-        await lobby.show_lobby()
+        await lobby.show()
 
     @command()
     async def shuffle(self, ctx: Context):
@@ -140,6 +140,8 @@ class LobbyCommands(Cog):
     async def clear(self, ctx: Context):
         if ctx.channel.id in self.lobbies:
             self.lobbies[ctx.channel.id] = Lobby(self.bot, ctx.channel)
+
+        await self.lobbies[ctx.channel.id].show()
 
     # -------- Tasks --------
 
