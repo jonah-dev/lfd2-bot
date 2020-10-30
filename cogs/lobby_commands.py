@@ -93,14 +93,14 @@ class LobbyCommands(Cog):
         await lobby.ready(ctx.author)
 
     @command()
+    async def flyin(self, ctx):
+        lobby = self.get_lobby(ctx)
+        await lobby.ready(ctx.author)
+
+    @command()
     async def unready(self, ctx: Context):
         lobby = self.get_lobby(ctx)
         await lobby.unready(ctx.author)
-
-    @command()
-    async def flyin(self, ctx):
-        lobby = self.get_lobby(ctx)
-        await lobby.flyin(ctx.author)
 
     @command()
     async def numbers(self, ctx: Context):

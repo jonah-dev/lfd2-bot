@@ -109,7 +109,7 @@ class Lobby:
     async def ready(self, user: Member) -> None:
         player = Player(user)
         if player not in self.players:
-            raise UsageException.join_the_lobby_first(self.channel)
+            await self.add(user)
 
         if player.is_ready():
             raise UsageException.already_ready(self.channel)
@@ -138,10 +138,6 @@ class Lobby:
         self.players[ind].set_unready()
         self.reset_orderings()
         await self.channel.send(f"{player.get_name()} unreadied!. :x:")
-
-    async def flyin(self, user):
-        await self.add(user)
-        await self.ready(user)
 
     def get_players(self) -> Tuple[List[Player], List[Player]]:
         ready = []
