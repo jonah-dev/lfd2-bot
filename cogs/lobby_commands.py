@@ -110,7 +110,7 @@ class LobbyCommands(Cog):
     @command()
     async def lobby(self, ctx: Context):
         lobby = self.get_lobby(ctx)
-        await lobby.show()
+        await lobby.show(temp=False)
 
     @command()
     async def shuffle(self, ctx: Context):
