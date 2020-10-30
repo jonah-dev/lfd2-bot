@@ -53,7 +53,7 @@ class Lobby:
     async def remove(self, user: Member, author: Optional[Member] = None):
         player = Player(user)
         if player not in self.players:
-            raise UsageException.not_in_lobby(self.channel)
+            raise UsageException.not_in_lobby(self.channel, player)
 
         if author is None:
             # If a user removes themself, then _others_
@@ -88,13 +88,14 @@ class Lobby:
 
     async def show_numbers(self) -> None:
         lobby_count = len(self.players)
-        if lobby_count == 8:
-            await self.channel.send("I think we got numbers!")
-            return
-
-        if lobby_count == 0:
-            await self.channel.send("We absolutely do **not** have numbers!")
-            return
+        if self.is_ready():
+            title = "We got a game!"
+        elif lobby_count >= 8:
+            title = "I think we got numbers!"
+        elif lobby_count == 0:
+            title = "We absolutely do **not** have numbers."
+        else:
+            title = "These are some numbers for sure."
 
         voice_count = 0
         for channel in self.bot.get_all_channels():
@@ -106,22 +107,14 @@ class Lobby:
             if not (guild_member.bot) and guild_member.status == Status.online:
                 online_count += 1
 
-        if voice_count >= 8:
-            return await self.channel.send(
-                f"There's {voice_count} in chat but"
-                f" only {lobby_count} in the lobby. C'mon!",
-            )
-
-        if online_count >= 8:
-            return await self.channel.send(
-                f"There's {online_count} online and you're"
-                f" telling me we only have {lobby_count} in the lobby???",
-            )
-
-        await self.channel.send(
-            f"There's {online_count} online, {voice_count} in chat,"
-            f" and only {lobby_count} in the lobby."
-        )
+        color = Colour.green() if self.is_ready() else Colour.orange()
+        embed = Embed(colour=color)
+        embed.title = title
+        embed.add_field(name="Online", value=online_count, inline=False)
+        embed.add_field(name="In Voice", value=voice_count, inline=False)
+        embed.add_field(name="Joined", value=lobby_count, inline=False)
+        embed.add_field(name="Ready", value=self.ready_count(), inline=False)
+        await self.channel.send(embed=embed)
 
     async def ready(self, user: Member) -> None:
         player = Player(user)
