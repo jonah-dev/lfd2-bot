@@ -9,7 +9,6 @@ from discord.ext import tasks
 from discord.ext.commands import command, Cog, Bot, Context
 
 from models.lobby import Lobby
-from utils.usage_exception import UsageException
 from matchmaking.linear_regression_ranker import get_ranker
 from matchmaking.random_shuffler import get_shuffler
 
@@ -35,21 +34,12 @@ class LobbyCommands(Cog):
 
     # -------- Helpers --------
 
-    async def get_lobby_then(self, ctx: Context, do_command) -> None:
-        if ctx.channel.id in self.lobbies:
-            self.lobbies[ctx.channel.id].channel = ctx.channel
-            return await do_command(self.lobbies[ctx.channel.id])
-
-        await ctx.send(
-            "You haven't started a lobby. Use `?start` to open a new lobby."
-        )
-
-    async def get_or_create_lobby_then(self, ctx: Context, do_command) -> None:
+    def get_lobby(self, ctx: Context) -> Lobby:
         if ctx.channel.id not in self.lobbies:
             self.lobbies[ctx.channel.id] = Lobby(self.bot, ctx.channel)
-            await ctx.send("The lobby has been started!")
+
         self.lobbies[ctx.channel.id].channel = ctx.channel
-        return await do_command(self.lobbies[ctx.channel.id])
+        return self.lobbies[ctx.channel.id]
 
     # -------- Commands --------
 
@@ -78,69 +68,59 @@ class LobbyCommands(Cog):
         await ctx.send(embed=embed)
 
     @command()
-    async def start(self, ctx: Context):
-        if ctx.channel.id in self.lobbies:
-            raise UsageException.lobby_already_started(ctx.channel)
-
-        self.lobbies[ctx.channel.id] = Lobby(self.bot, ctx.channel)
-        await ctx.send("The lobby has been started!")
-
-    @command()
     async def join(self, ctx: Context):
-        await self.get_or_create_lobby_then(
-            ctx, lambda lobby: lobby.add(ctx.author)
-        )
+        lobby = self.get_lobby(ctx)
+        await lobby.add(ctx.author)
 
     @command()
     async def add(self, ctx, member: Member):
-        await self.get_lobby_then(
-            ctx, lambda lobby: lobby.add(member, author=ctx.author)
-        )
+        lobby = self.get_lobby(ctx)
+        await lobby.add(member, author=ctx.author)
 
     @command()
     async def leave(self, ctx: Context):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.remove(ctx.author))
+        lobby = self.get_lobby(ctx)
+        await lobby.remove(ctx.author)
 
     @command()
     async def remove(self, ctx: Context, member: Member):
-        await self.get_lobby_then(
-            ctx, lambda lobby: lobby.remove(member, author=ctx.author)
-        )
+        lobby = self.get_lobby(ctx)
+        await lobby.remove(member, author=ctx.author)
 
     @command()
     async def ready(self, ctx: Context):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.ready(ctx.author))
+        lobby = self.get_lobby(ctx)
+        await lobby.ready(ctx.author)
 
     @command()
     async def unready(self, ctx: Context):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.unready(ctx.author))
+        lobby = self.get_lobby(ctx)
+        await lobby.unready(ctx.author)
 
     @command()
     async def flyin(self, ctx):
-        await self.get_or_create_lobby_then(
-            ctx, lambda lobby: lobby.flyin(ctx.author)
-        )
+        lobby = self.get_lobby(ctx)
+        await lobby.flyin(ctx.author)
 
     @command()
     async def numbers(self, ctx: Context):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.show_numbers())
+        lobby = self.get_lobby(ctx)
+        await lobby.show_numbers()
 
     @command()
     async def lobby(self, ctx: Context):
-        await self.get_lobby_then(ctx, lambda lobby: lobby.show_lobby())
+        lobby = self.get_lobby(ctx)
+        await lobby.show_lobby()
 
     @command()
     async def shuffle(self, ctx: Context):
-        await self.get_lobby_then(
-            ctx, lambda lobby: lobby.show_next_match(get_shuffler())
-        )
+        lobby = self.get_lobby(ctx)
+        await lobby.show_next_match(get_shuffler())
 
     @command()
     async def ranked(self, ctx: Context):
-        await self.get_lobby_then(
-            ctx,
-            lambda lobby: lobby.show_next_match(get_ranker(ctx.channel)),
-        )
+        lobby = self.get_lobby(ctx)
+        await lobby.show_next_match(get_ranker(ctx.channel)),
 
     @command()
     async def leaderboard(self, ctx: Context, option: str = None):
@@ -153,13 +133,13 @@ class LobbyCommands(Cog):
             },
         )
 
-        await self.get_lobby_then(ctx, then)
+        lobby = self.get_lobby(ctx)
+        await then(lobby)
 
     @command()
-    async def reset(self, ctx: Context):
-        created = "reset" if ctx.channel.id in self.lobbies else "started"
-        self.lobbies[ctx.channel.id] = Lobby(self.bot, ctx.channel)
-        await ctx.send(f"The lobby has been {created}!")
+    async def clear(self, ctx: Context):
+        if ctx.channel.id in self.lobbies:
+            self.lobbies[ctx.channel.id] = Lobby(self.bot, ctx.channel)
 
     # -------- Tasks --------
 
