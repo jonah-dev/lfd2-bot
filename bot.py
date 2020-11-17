@@ -147,7 +147,6 @@ class LFD2Bot(commands.Bot):
 
 print("Booting up the bot")
 bot = LFD2Bot()
-bot.remove_command("help")
 print(f"Bot Initialized at: {datetime.now()}")
 bot.load_cogs()
 bot.run()
