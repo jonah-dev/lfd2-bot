@@ -56,21 +56,6 @@ class LFD2Bot(commands.Bot):
             print("disconnecting")
             await self.close()
 
-        if message.content == "?commands":
-            await ctx.send(
-                """```\n
-                ?start - Initializes the lobby \n
-                ?join - Joins the lobby \n
-                ?leave - Leaves the lobby \n
-                ?lobby - View the lobby \n
-                ?order66 - Issues a ping to begin the game \n
-                ?lag - Calculates your current lag \n
-                ?ped - FOOTBALL SZN \n
-                ?ready - Ready up! \n
-                ?unready - Not R! \n
-                ```"""
-            )
-
         # Need to move this into a "funny commands" cog
         if message.content == "?lag":
             now = datetime.now()
