@@ -237,7 +237,13 @@ class Lobby:
 
         remaining_spots = 8 - self.ready_count()
         if remaining_spots == 0:
-            text = "Use `?shuffle` or `?ranked` to start building teams."
+            game_launch_uri = 'http://lfd2.zambonihunters.com'
+            embed.add_field(
+                name=f"Let's GO!",
+                value=f"[Click here]({game_launch_uri}) to launch LFD2",
+                inline=False,
+            )
+            text = "Use `?shuffle` or `?ranked` to start building teams.\n"
         elif remaining_spots == 1:
             text = "There's one spot remaining!"
         else:
