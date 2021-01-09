@@ -136,3 +136,6 @@ oath_cache.json
 # Content
 assets/temp/*
 !assets/temp/.keep
+
+# IDE settings
+.idea/
