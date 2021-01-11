@@ -19,8 +19,6 @@ from utils.handle import handle
 
 from discord.ext import commands
 
-from models.player import Player
-
 
 class LFD2Bot(commands.Bot):
     """
@@ -51,10 +49,6 @@ class LFD2Bot(commands.Bot):
     async def process_commands(self, message):
         ctx = await self.get_context(message)
 
-        if message.content == "disconnect" and self.is_admin(ctx.author):
-            print("disconnecting")
-            await self.close()
-
         if ctx.command is None:
             return
 
@@ -78,6 +72,7 @@ class LFD2Bot(commands.Bot):
         """
         self.load_extension("cogs.lobby_commands")
         self.load_extension("cogs.misc_commands")
+        self.load_extension("cogs.admin_commands")
 
     def run(self, *args, **kwargs):
         """
@@ -85,15 +80,6 @@ class LFD2Bot(commands.Bot):
         cog registration. The next step with be authentication of the socket.
         """
         super().run(os.environ["DISCORD_TOKEN"])
-
-    @staticmethod
-    def is_admin(author):
-        """
-        For reliability and safety reasons, there are some admin controls
-        loosely gated by this check. These are the Discord IDs of primary
-        admin users.
-        """
-        return author.id in [147788154831634434, 236938533179228162]
 
 
 print("Booting up the bot")
