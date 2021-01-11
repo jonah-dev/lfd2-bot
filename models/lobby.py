@@ -5,8 +5,7 @@ from typing import Callable, List, Dict, Optional, Tuple
 from asyncio.locks import Lock
 
 from discord import Message, File, Embed, Colour
-from discord import Member, Status
-from discord import VoiceChannel, TextChannel
+from discord import Member, TextChannel
 from discord.ext.commands import Bot
 
 from models.player import Player
@@ -48,7 +47,7 @@ class Lobby:
         if self.ready_count() == 7:
             await self.broadcast_game_almost_full()
 
-        await self.show(title=f"{player.get_name()} has joined the game!")
+        await self.show(title=f"{player.get_name()} has Joined!")
 
     async def remove(self, user: Member, author: Optional[Member] = None):
         player = Player(user)
@@ -62,7 +61,7 @@ class Lobby:
 
         self.players.remove(player)
 
-        await self.show(title=f"{player.get_name()} has left the lobby.")
+        await self.show(title=f"{player.get_name()} has Left")
 
     async def show(
         self,
@@ -86,36 +85,6 @@ class Lobby:
         finally:
             self.show_lobby_lock.release()
 
-    async def show_numbers(self) -> None:
-        lobby_count = len(self.players)
-        if self.is_ready():
-            title = "We got a game!"
-        elif lobby_count >= 8:
-            title = "I think we got numbers!"
-        elif lobby_count == 0:
-            title = "We absolutely do **not** have numbers."
-        else:
-            title = "These are some numbers for sure."
-
-        voice_count = 0
-        for channel in self.bot.get_all_channels():
-            if isinstance(channel, VoiceChannel):
-                voice_count += sum(not m.bot for m in channel.members)
-
-        online_count = 0
-        for guild_member in self.channel.guild.members:
-            if not (guild_member.bot) and guild_member.status == Status.online:
-                online_count += 1
-
-        color = Colour.green() if self.is_ready() else Colour.orange()
-        embed = Embed(colour=color)
-        embed.title = title
-        embed.add_field(name="Online", value=online_count, inline=False)
-        embed.add_field(name="In Voice", value=voice_count, inline=False)
-        embed.add_field(name="Joined", value=lobby_count, inline=False)
-        embed.add_field(name="Ready", value=self.ready_count(), inline=False)
-        await self.channel.send(embed=embed)
-
     async def ready(self, user: Member) -> None:
         player = Player(user)
         if player not in self.players:
@@ -132,11 +101,10 @@ class Lobby:
         self.reset_orderings()
 
         if self.is_ready():
-            title = f"Game starting in ({self.channel.mention}))"
-            embed = self.get_lobby_message(mention=True, title=title)
-            await self.channel.send(embed=embed)
+            title = f"Game Starting in #{self.channel.name}"
+            await self.show(title=title, mention=True)
         else:
-            await self.show(title=f"{player.get_name()} is ready!")
+            await self.show(title=f"{player.get_name()} is Ready!")
 
     async def unready(self, user: Member) -> None:
         player = Player(user)
@@ -147,7 +115,7 @@ class Lobby:
         self.players[ind].set_unready()
         self.reset_orderings()
 
-        await self.show(title=f"{player.get_name()} is not ready.")
+        await self.show(title=f"{player.get_name()} is not Ready")
 
     def get_players(self) -> Tuple[List[Player], List[Player]]:
         ready = []
@@ -222,9 +190,13 @@ class Lobby:
 
         if ready:
             print = "get_mention" if mention else "get_name"
+            value = "".join([f"• {(getattr(p, print))()}\n" for p in ready])
+            if self.is_ready():
+                url = "http://lfd2.zambonihunters.com"
+                value = f"{value}[Click here to launch the game]({url})\n"
             embed.add_field(
                 name=f"Players ({len(ready)})",
-                value="".join([f"• {(getattr(p, print))()}\n" for p in ready]),
+                value=value,
                 inline=False,
             )
 
@@ -237,12 +209,6 @@ class Lobby:
 
         remaining_spots = 8 - self.ready_count()
         if remaining_spots == 0:
-            game_launch_uri = 'http://lfd2.zambonihunters.com'
-            embed.add_field(
-                name=f"Let's GO!",
-                value=f"[Click here]({game_launch_uri}) to launch LFD2",
-                inline=False,
-            )
             text = "Use `?shuffle` or `?ranked` to start building teams.\n"
         elif remaining_spots == 1:
             text = "There's one spot remaining!"

@@ -157,6 +157,7 @@ class TestLobby(AsyncTestCase):
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 1
         assert embed.fields[0].name == "Alternates (1)"
+        assert embed.fields[0].value.count("\n") == 1
         assert str(player.display_name) in embed.fields[0].value
 
         embed = lobby.get_lobby_message(mention=True)
@@ -170,6 +171,7 @@ class TestLobby(AsyncTestCase):
         assert len(embed.fields) == 1
         assert embed.fields[0].name == "Players (1)"
         assert str(player.display_name) in embed.fields[0].value
+        assert embed.fields[0].value.count("\n") == 1
 
         embed = lobby.get_lobby_message(mention=True)
         assert str(player.mention) in embed.fields[0].value
@@ -182,6 +184,7 @@ class TestLobby(AsyncTestCase):
         assert embed.colour == Colour.green()
         assert len(embed.fields) == 1
         assert embed.fields[0].name == "Players (8)"
+        assert embed.fields[0].value.count("\n") == 9  # +Launch URL
 
         await lobby.unready(player)
         embed = lobby.get_lobby_message()
@@ -190,7 +193,9 @@ class TestLobby(AsyncTestCase):
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 2
         assert embed.fields[0].name == "Players (7)"
+        assert embed.fields[0].value.count("\n") == 7
         assert embed.fields[1].name == "Alternates (1)"
+        assert embed.fields[1].value.count("\n") == 1
 
         await lobby.remove(player)
         embed = lobby.get_lobby_message()
@@ -199,6 +204,7 @@ class TestLobby(AsyncTestCase):
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 1
         assert embed.fields[0].name == "Players (7)"
+        assert embed.fields[0].value.count("\n") == 7
 
         for _ in range(100):
             await lobby.add(member())
@@ -208,6 +214,7 @@ class TestLobby(AsyncTestCase):
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 2
         assert embed.fields[1].name == "Alternates (100)"
+        assert embed.fields[1].value.count("\n") == 100
 
         await lobby.ready(member())
         embed = lobby.get_lobby_message()
@@ -216,42 +223,19 @@ class TestLobby(AsyncTestCase):
         assert embed.colour == Colour.green()
         assert len(embed.fields) == 2
         assert embed.fields[0].name == "Players (8)"
+        assert embed.fields[0].value.count("\n") == 9  # +Launch URL
         assert embed.fields[1].name == "Alternates (100)"
+        assert embed.fields[1].value.count("\n") == 100
 
     async def test_game_start_message(self):
-        lobby = Lobby(bot(), ctx := channel())
+        lobby = Lobby(bot(), ctx := channel("channel"))
         lobby.get_lobby_message = AsyncMock()
         for _ in range(8):
             await lobby.ready(member())
         lobby.get_lobby_message.assert_called_with(
             mention=True,
-            title=f"Game starting in ({ctx.mention}))",
+            title=f"Game Starting in #{ctx.name}",
         )
-
-    async def test_numbers(self):
-        discord_bot = bot()
-        discord_bot.get_all_channels.return_value = [
-            vchannel(participants=[member(), member()]),
-            vchannel(participants=[member()]),
-        ]
-
-        lobby_channel = channel()
-        online = [member() for _ in range(7)]
-        offline = [member(status=Status.offline) for _ in range(5)]
-        lobby_channel.guild.members = online + offline
-        lobby = Lobby(discord_bot, lobby_channel)
-        await lobby.add(member())
-        lobby_channel.reset_mock()
-        await lobby.show_numbers()
-        assert len(lobby_channel.send.call_args_list) == 1
-        embed: Embed = lobby_channel.send.call_args_list[0].kwargs["embed"]
-        assert embed.title == "These are some numbers for sure."
-        assert len(embed.fields) == 4
-        fields = embed.fields
-        assert fields[0].name == "Online" and fields[0].value == "7"
-        assert fields[1].name == "In Voice" and fields[1].value == "3"
-        assert fields[2].name == "Joined" and fields[2].value == "1"
-        assert fields[3].name == "Ready" and fields[3].value == "0"
 
     @patch("matchmaking.game_data.GameData.fetch", game_data)
     async def test_match_combinations(self):

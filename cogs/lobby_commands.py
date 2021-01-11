@@ -103,11 +103,6 @@ class LobbyCommands(Cog):
         await lobby.unready(ctx.author)
 
     @command()
-    async def numbers(self, ctx: Context):
-        lobby = self.get_lobby(ctx)
-        await lobby.show_numbers()
-
-    @command()
     async def lobby(self, ctx: Context):
         lobby = self.get_lobby(ctx)
         await lobby.show(temp=False)
