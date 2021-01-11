@@ -39,6 +39,16 @@ class LFD2Bot(commands.Bot):
             help_attrs=dict(hidden=False),
             fetch_offline_members=False,
         )
+    
+    async def on_message(self, message):
+        if message.author.bot:
+            return
+
+        ctx = await self.get_context(message)
+        if ctx.command is None:
+            return # Ignore unknown messages
+        
+        await self.invoke(ctx)
 
     async def on_command_error(self, context: Context, exception):
         await handle(context, exception)
