@@ -44,81 +44,68 @@ class LobbyCommands(Cog):
     # -------- Commands --------
 
     @command()
-    async def help(self, ctx: Context):
-        embed = Embed(colour=Colour.orange())
-        embed.set_author(name="Help")
-        embed.add_field(name="?join", value="Joins the lobby", inline=False)
-        embed.add_field(name="?leave", value="Leaves the lobby", inline=False)
-        embed.add_field(name="?lobby", value="Views the lobby", inline=False)
-        embed.add_field(name="?ready", value="Readies your user", inline=False)
-        embed.add_field(
-            name="?unready", value="Unreadies your user", inline=False
-        )
-        embed.add_field(
-            name="?shuffle",
-            value="Provides randomly decided teams.",
-            inline=False,
-        )
-        embed.add_field(
-            name="?remove [player]",
-            value="Removes player by tag",
-            inline=False,
-        )
-        embed.add_field(name="?reset", value="Resets the lobby", inline=False)
-        await ctx.send(embed=embed)
-
-    @command()
     async def join(self, ctx: Context):
+        """Join the lobby"""
         lobby = self.get_lobby(ctx)
         await lobby.add(ctx.author)
 
     @command()
     async def add(self, ctx, member: Member):
+        """Add another user to the lobby"""
         lobby = self.get_lobby(ctx)
         await lobby.add(member, author=ctx.author)
 
     @command()
     async def leave(self, ctx: Context):
+        """Leave the lobby and prevent others from adding you back"""
         lobby = self.get_lobby(ctx)
         await lobby.remove(ctx.author)
 
     @command()
     async def remove(self, ctx: Context, member: Member):
+        """Remove other users from the lobby"""
         lobby = self.get_lobby(ctx)
         await lobby.remove(member, author=ctx.author)
 
     @command()
     async def ready(self, ctx: Context):
+        """Grab the next available slot in the game"""
         lobby = self.get_lobby(ctx)
         await lobby.ready(ctx.author)
 
     @command()
     async def flyin(self, ctx):
+        """Ready up with enthusiasm"""
         lobby = self.get_lobby(ctx)
         await lobby.ready(ctx.author)
 
     @command()
     async def unready(self, ctx: Context):
+        """Leave your reserved slot"""
         lobby = self.get_lobby(ctx)
         await lobby.unready(ctx.author)
 
     @command()
     async def lobby(self, ctx: Context):
+        """See the current lobby"""
         lobby = self.get_lobby(ctx)
         await lobby.show(temp=False)
 
     @command()
     async def shuffle(self, ctx: Context):
+        """Create teams if possible"""
         lobby = self.get_lobby(ctx)
         await lobby.show_next_match(get_shuffler())
 
     @command()
     async def ranked(self, ctx: Context):
+        """Create fair teams based on player history"""
         lobby = self.get_lobby(ctx)
         await lobby.show_next_match(get_ranker(ctx.channel)),
 
     @command()
     async def leaderboard(self, ctx: Context, option: str = None):
+        """See player ranks"""
         then = option_switch(
             ctx.channel,
             option,
@@ -133,6 +120,7 @@ class LobbyCommands(Cog):
 
     @command()
     async def clear(self, ctx: Context):
+        """Remove all players from the lobby"""
         if ctx.channel.id in self.lobbies:
             self.lobbies[ctx.channel.id] = Lobby(self.bot, ctx.channel)
 
