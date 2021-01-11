@@ -20,7 +20,7 @@ class MiscCommands(Cog):
     def cog_unload(self):
         self.janitor.cancel()
 
-    @command()
+    @command(hidden=True)
     async def lag(self, ctx: Context):
         # TODO(jonah-dev) Explain yourself
         now = datetime.now()
@@ -48,6 +48,6 @@ class MiscCommands(Cog):
             author = ctx.author.display_name
             await ctx.send(f"Current lag for {author} is: {lag}ms")
 
-    @command()
+    @command(hidden=True)
     async def ped(self, ctx: Context):
         await ctx.send(f"Current lag for {ctx.author.display_name} is: {0}ms")

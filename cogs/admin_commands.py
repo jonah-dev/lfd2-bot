@@ -27,7 +27,7 @@ class AdminCommands(Cog):
     def cog_unload(self):
         self.janitor.cancel()
 
-    @command()
+    @command(hidden=True)
     async def disconnect(self, ctx: Context):
         if not self.is_admin(ctx.author):
             return
