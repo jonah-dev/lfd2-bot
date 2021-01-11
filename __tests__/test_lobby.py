@@ -228,13 +228,13 @@ class TestLobby(AsyncTestCase):
         assert embed.fields[1].value.count("\n") == 100
 
     async def test_game_start_message(self):
-        lobby = Lobby(bot(), ctx := channel())
+        lobby = Lobby(bot(), ctx := channel("channel"))
         lobby.get_lobby_message = AsyncMock()
         for _ in range(8):
             await lobby.ready(member())
         lobby.get_lobby_message.assert_called_with(
             mention=True,
-            title=f"Game starting in ({ctx.name}))",
+            title=f"Game Starting in #{ctx.name}",
         )
 
     async def test_numbers(self):

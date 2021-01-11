@@ -48,7 +48,7 @@ class Lobby:
         if self.ready_count() == 7:
             await self.broadcast_game_almost_full()
 
-        await self.show(title=f"{player.get_name()} has joined the game!")
+        await self.show(title=f"{player.get_name()} has Joined!")
 
     async def remove(self, user: Member, author: Optional[Member] = None):
         player = Player(user)
@@ -62,7 +62,7 @@ class Lobby:
 
         self.players.remove(player)
 
-        await self.show(title=f"{player.get_name()} has left the lobby.")
+        await self.show(title=f"{player.get_name()} has Left")
 
     async def show(
         self,
@@ -132,11 +132,10 @@ class Lobby:
         self.reset_orderings()
 
         if self.is_ready():
-            title = f"Game starting in ({self.channel.mention}))"
-            embed = self.get_lobby_message(mention=True, title=title)
-            await self.channel.send(embed=embed)
+            title = f"Game Starting in #{self.channel.name}"
+            await self.show(title=title, mention=True)
         else:
-            await self.show(title=f"{player.get_name()} is ready!")
+            await self.show(title=f"{player.get_name()} is Ready!")
 
     async def unready(self, user: Member) -> None:
         player = Player(user)
@@ -147,7 +146,7 @@ class Lobby:
         self.players[ind].set_unready()
         self.reset_orderings()
 
-        await self.show(title=f"{player.get_name()} is not ready.")
+        await self.show(title=f"{player.get_name()} is not Ready")
 
     def get_players(self) -> Tuple[List[Player], List[Player]]:
         ready = []
