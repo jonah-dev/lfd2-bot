@@ -40,20 +40,6 @@ class LFD2Bot(commands.Bot):
             fetch_offline_members=False,
         )
 
-    async def on_message(self, message):
-        if message.author.bot:
-            return
-
-        await self.process_commands(message)
-
-    async def process_commands(self, message):
-        ctx = await self.get_context(message)
-
-        if ctx.command is None:
-            return
-
-        await self.invoke(ctx)
-
     async def on_command_error(self, context: Context, exception):
         await handle(context, exception)
 
