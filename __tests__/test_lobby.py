@@ -237,31 +237,6 @@ class TestLobby(AsyncTestCase):
             title=f"Game Starting in #{ctx.name}",
         )
 
-    async def test_numbers(self):
-        discord_bot = bot()
-        discord_bot.get_all_channels.return_value = [
-            vchannel(participants=[member(), member()]),
-            vchannel(participants=[member()]),
-        ]
-
-        lobby_channel = channel()
-        online = [member() for _ in range(7)]
-        offline = [member(status=Status.offline) for _ in range(5)]
-        lobby_channel.guild.members = online + offline
-        lobby = Lobby(discord_bot, lobby_channel)
-        await lobby.add(member())
-        lobby_channel.reset_mock()
-        await lobby.show_numbers()
-        assert len(lobby_channel.send.call_args_list) == 1
-        embed: Embed = lobby_channel.send.call_args_list[0].kwargs["embed"]
-        assert embed.title == "These are some numbers for sure."
-        assert len(embed.fields) == 4
-        fields = embed.fields
-        assert fields[0].name == "Online" and fields[0].value == "7"
-        assert fields[1].name == "In Voice" and fields[1].value == "3"
-        assert fields[2].name == "Joined" and fields[2].value == "1"
-        assert fields[3].name == "Ready" and fields[3].value == "0"
-
     @patch("matchmaking.game_data.GameData.fetch", game_data)
     async def test_match_combinations(self):
         async def test_with_ordering(order: Callable):

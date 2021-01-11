@@ -5,8 +5,7 @@ from typing import Callable, List, Dict, Optional, Tuple
 from asyncio.locks import Lock
 
 from discord import Message, File, Embed, Colour
-from discord import Member, Status
-from discord import VoiceChannel, TextChannel
+from discord import Member, TextChannel
 from discord.ext.commands import Bot
 
 from models.player import Player
@@ -85,36 +84,6 @@ class Lobby:
             await handle(self.channel, exception)
         finally:
             self.show_lobby_lock.release()
-
-    async def show_numbers(self) -> None:
-        lobby_count = len(self.players)
-        if self.is_ready():
-            title = "We got a game!"
-        elif lobby_count >= 8:
-            title = "I think we got numbers!"
-        elif lobby_count == 0:
-            title = "We absolutely do **not** have numbers."
-        else:
-            title = "These are some numbers for sure."
-
-        voice_count = 0
-        for channel in self.bot.get_all_channels():
-            if isinstance(channel, VoiceChannel):
-                voice_count += sum(not m.bot for m in channel.members)
-
-        online_count = 0
-        for guild_member in self.channel.guild.members:
-            if not (guild_member.bot) and guild_member.status == Status.online:
-                online_count += 1
-
-        color = Colour.green() if self.is_ready() else Colour.orange()
-        embed = Embed(colour=color)
-        embed.title = title
-        embed.add_field(name="Online", value=online_count, inline=False)
-        embed.add_field(name="In Voice", value=voice_count, inline=False)
-        embed.add_field(name="Joined", value=lobby_count, inline=False)
-        embed.add_field(name="Ready", value=self.ready_count(), inline=False)
-        await self.channel.send(embed=embed)
 
     async def ready(self, user: Member) -> None:
         player = Player(user)
