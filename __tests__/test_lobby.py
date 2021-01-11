@@ -157,6 +157,7 @@ class TestLobby(AsyncTestCase):
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 1
         assert embed.fields[0].name == "Alternates (1)"
+        assert embed.fields[0].value.count("\n") == 1
         assert str(player.display_name) in embed.fields[0].value
 
         embed = lobby.get_lobby_message(mention=True)
@@ -170,6 +171,7 @@ class TestLobby(AsyncTestCase):
         assert len(embed.fields) == 1
         assert embed.fields[0].name == "Players (1)"
         assert str(player.display_name) in embed.fields[0].value
+        assert embed.fields[0].value.count("\n") == 1
 
         embed = lobby.get_lobby_message(mention=True)
         assert str(player.mention) in embed.fields[0].value
@@ -182,6 +184,7 @@ class TestLobby(AsyncTestCase):
         assert embed.colour == Colour.green()
         assert len(embed.fields) == 1
         assert embed.fields[0].name == "Players (8)"
+        assert embed.fields[0].value.count("\n") == 9  # +Launch URL
 
         await lobby.unready(player)
         embed = lobby.get_lobby_message()
@@ -190,7 +193,9 @@ class TestLobby(AsyncTestCase):
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 2
         assert embed.fields[0].name == "Players (7)"
+        assert embed.fields[0].value.count("\n") == 7
         assert embed.fields[1].name == "Alternates (1)"
+        assert embed.fields[1].value.count("\n") == 1
 
         await lobby.remove(player)
         embed = lobby.get_lobby_message()
@@ -199,6 +204,7 @@ class TestLobby(AsyncTestCase):
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 1
         assert embed.fields[0].name == "Players (7)"
+        assert embed.fields[0].value.count("\n") == 7
 
         for _ in range(100):
             await lobby.add(member())
@@ -208,6 +214,7 @@ class TestLobby(AsyncTestCase):
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 2
         assert embed.fields[1].name == "Alternates (100)"
+        assert embed.fields[1].value.count("\n") == 100
 
         await lobby.ready(member())
         embed = lobby.get_lobby_message()
@@ -216,7 +223,9 @@ class TestLobby(AsyncTestCase):
         assert embed.colour == Colour.green()
         assert len(embed.fields) == 2
         assert embed.fields[0].name == "Players (8)"
+        assert embed.fields[0].value.count("\n") == 9  # +Launch URL
         assert embed.fields[1].name == "Alternates (100)"
+        assert embed.fields[1].value.count("\n") == 100
 
     async def test_game_start_message(self):
         lobby = Lobby(bot(), ctx := channel())
@@ -225,7 +234,7 @@ class TestLobby(AsyncTestCase):
             await lobby.ready(member())
         lobby.get_lobby_message.assert_called_with(
             mention=True,
-            title=f"Game starting in ({ctx.mention}))",
+            title=f"Game starting in ({ctx.name}))",
         )
 
     async def test_numbers(self):

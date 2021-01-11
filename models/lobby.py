@@ -222,9 +222,13 @@ class Lobby:
 
         if ready:
             print = "get_mention" if mention else "get_name"
+            value = "".join([f"• {(getattr(p, print))()}\n" for p in ready])
+            if self.is_ready():
+                url = "http://lfd2.zambonihunters.com"
+                value = f"{value}[Click here to launch the game]({url})\n"
             embed.add_field(
                 name=f"Players ({len(ready)})",
-                value="".join([f"• {(getattr(p, print))()}\n" for p in ready]),
+                value=value,
                 inline=False,
             )
 
@@ -237,12 +241,6 @@ class Lobby:
 
         remaining_spots = 8 - self.ready_count()
         if remaining_spots == 0:
-            game_launch_uri = 'http://lfd2.zambonihunters.com'
-            embed.add_field(
-                name=f"Let's GO!",
-                value=f"[Click here]({game_launch_uri}) to launch LFD2",
-                inline=False,
-            )
             text = "Use `?shuffle` or `?ranked` to start building teams.\n"
         elif remaining_spots == 1:
             text = "There's one spot remaining!"
