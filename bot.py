@@ -15,10 +15,13 @@ import os
 from datetime import datetime
 
 from discord.ext.commands.context import Context
+from discord.ext import commands
+from discord import Intents
 from utils.handle import handle
 
-from discord.ext import commands
 
+intents = Intents.default()
+intents.members = True
 
 class LFD2Bot(commands.Bot):
     """
@@ -37,7 +40,8 @@ class LFD2Bot(commands.Bot):
             description="Organize your LFD2 Games with ease",
             pm_help=None,
             help_attrs=dict(hidden=False),
-            fetch_offline_members=False,
+            fetch_offline_members=True,
+            intents=intents,
         )
     
     async def on_message(self, message):
