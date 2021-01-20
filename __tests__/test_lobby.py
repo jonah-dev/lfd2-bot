@@ -281,18 +281,34 @@ class TestLobby(AsyncTestCase):
         await test_with_ordering(get_ranker(channel()))
 
     async def test_broadcast(self):
+        topic = """
+            @players(max: 2)
+            @broadcast([dest1, dest2])
+        """
         discord_bot = bot()
         discord_bot.get_all_channels.return_value = [
-            lobby_channel := channel(
-                name="lobby", topic="@broadcast(#dest1)\n@broadcast(#dest2)"
-            ),
+            lobby_channel := channel(name="lobby", topic=topic),
             dest_one := channel(name="dest1"),
             dest_two := channel(name="dest2"),
             misc_channel := channel(name="misc"),
         ]
 
         lobby = Lobby(discord_bot, lobby_channel)
-        await lobby.broadcast_game_almost_full()
+        assert dest_one.send.call_count == 0
+        assert dest_two.send.call_count == 0
+        assert misc_channel.send.call_count == 0
+
+        await lobby.add(player_one := member())
+        assert dest_one.send.call_count == 0
+        assert dest_two.send.call_count == 0
+        assert misc_channel.send.call_count == 0
+
+        await lobby.ready(player_one)
+        assert dest_one.send.call_count == 1
+        assert dest_two.send.call_count == 1
+        assert misc_channel.send.call_count == 0
+
+        await lobby.ready(member())
         assert dest_one.send.call_count == 1
         assert dest_two.send.call_count == 1
         assert misc_channel.send.call_count == 0

@@ -4,6 +4,9 @@ import inspect
 
 from typing import Any, Callable, Dict, List, Optional
 
+from discord.channel import TextChannel
+from discord.ext.commands import Bot
+
 DIRECTIVE = re.compile(r"^\s*@(?P<directive>.*)\((?P<props>.*)\)\s*$", re.M)
 
 ALL_DIRECTIVES: Dict[str, Callable] = {}
@@ -14,11 +17,14 @@ def directive(fn):
 
 
 class Config:
-    def __init__(self, topic: str):
+    def __init__(self, topic: str, bot: Bot):
+        self.bot = bot
+
         self.vMax: Optional[int] = None
         self.vMin: Optional[int] = None
         self.vOverflow: bool = True
         self.vTeams: Optional[List[int]] = None
+        self.vBroadcastChannels: List = list()
 
         self.issues = {}
 
@@ -87,6 +93,29 @@ class Config:
             return
 
         self.vOverflow = props
+
+    @directive
+    def broadcast(self, props: str):
+        props = self.parseSingle(props)
+        if type(props) is str:
+            destinations = list(props)
+        elif type(props) is list:
+            destinations = props
+        else:
+            self.issue("You must provide the channel name(s)")
+            return
+
+        all_channels = self.bot.get_all_channels()
+        for dest in destinations:
+            matching = list(filter(lambda c: c.name == dest, all_channels))
+            if not len(matching):
+                self.issue(f"'{dest}' is not a visible text channel")
+
+            for channel in matching:
+                if not isinstance(channel, TextChannel):
+                    self.issue(f"'{dest}' is not a text channel")
+                else:
+                    self.vBroadcastChannels.append(channel)
 
     # -- Helpers --------------------------------------------------------------
 

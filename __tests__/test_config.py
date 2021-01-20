@@ -1,6 +1,14 @@
 from aiounittest import AsyncTestCase
+from unittest.mock import AsyncMock
+
+from discord.ext.commands.bot import Bot
 
 from models.config import Config
+
+
+def bot() -> Bot:
+    bot = AsyncMock(spec=Bot)
+    return bot
 
 
 class TestConfig(AsyncTestCase):
@@ -76,7 +84,7 @@ class TestConfig(AsyncTestCase):
             @players(min: 6, max: 10)
             @overflow(true)
         """
-        c = Config(topic)
+        c = Config(topic, bot())
         assert c.vMax == 10
         assert c.vMin == 6
         assert c.vOverflow
@@ -87,7 +95,7 @@ class TestConfig(AsyncTestCase):
             @players(min: 1, max: 4)
             @overflow(false)
         """
-        c = Config(topic)
+        c = Config(topic, bot())
         assert c.vMax == 4
         assert c.vMin == 1
         assert not c.vOverflow
@@ -99,7 +107,7 @@ class TestConfig(AsyncTestCase):
             @players(min: 8, max: 8)
             @teams([4, 4])
         """
-        c = Config(topic)
+        c = Config(topic, bot())
         assert c.vMax == 8
         assert c.vMin == 8
         assert c.vOverflow
@@ -111,7 +119,7 @@ class TestConfig(AsyncTestCase):
             @players(min: 4, max: 5)
             @overflow(true)
         """
-        c = Config(topic)
+        c = Config(topic, bot())
         assert c.vMax == 5
         assert c.vMin == 4
         assert c.vOverflow

@@ -1,6 +1,5 @@
 from functools import reduce
 import asyncio
-import re
 from typing import Callable, List, Dict, Optional, Tuple
 from asyncio.locks import Lock
 
@@ -21,7 +20,7 @@ class Lobby:
     def __init__(self, bot: Bot, channel: TextChannel):
         self.bot = bot
         self.channel: TextChannel = channel
-        self.c: Config = Config(channel.topic)
+        self.c: Config = Config(channel.topic, bot)
         self.players: List[Player] = []
         self.leavers: List[Player] = []
         self.orderings: Dict[Callable, MatchFinder] = {}
@@ -48,9 +47,6 @@ class Lobby:
             raise UsageException.no_overflow(self.channel)
 
         self.players.append(player)
-
-        if self.c.vMax is not None and self.ready_count() == self.c.vMax - 1:
-            await self.broadcast_game_almost_full()
 
         await self.show(title=f"{player.get_name()} has Joined!")
 
@@ -104,6 +100,9 @@ class Lobby:
         ind = self.players.index(player)
         self.players[ind].set_ready()
         self.reset_orderings()
+
+        if self.c.vMax is not None and self.ready_count() == self.c.vMax - 1:
+            await self.broadcast_game_almost_full()
 
         if self.is_ready():
             title = f"Game Starting in #{self.channel.name}"
@@ -260,40 +259,24 @@ class Lobby:
         self.orderings = {}
 
     async def broadcast_game_almost_full(self) -> None:
-        destinations = self.get_broadcast_channels()
+        destinations = self.c.vBroadcastChannels
         if not destinations:
             return
 
+        async def trySend(channel, message):
+            try:
+                await channel.send(embed=message)
+            except Exception:
+                pass
+
         broadcasts = []
-        message = self.get_broadcast_message()
-        for channel in self.bot.get_all_channels():
-            if (
-                isinstance(channel, TextChannel)
-                and channel.name in destinations
-            ):
-                broadcasts.append(channel.send(embed=message))
+        title = f"Game almost full in #{self.channel.name}"
+        message = self.get_lobby_message(False, title)
+        for dest in destinations:
+            broadcasts.append(trySend(dest, message))
 
         if broadcasts:
             await asyncio.wait(broadcasts)
-
-    def get_broadcast_channels(self) -> List[TextChannel]:
-        if self.channel.topic is None:
-            return []
-
-        return re.findall(
-            r"^@broadcast\(#([^\s]+)\)", self.channel.topic, re.M
-        )
-
-    def get_broadcast_message(self) -> Embed:
-        embed = Embed(colour=Colour.orange())
-        embed.title = "Left 4 Dead game starting soon!"
-        embed.description = (
-            "Only one more player is needed for a full lobby.\n"
-        )
-        for player in self.players:
-            embed.description += f"• {player.get_mention()}\n"
-        embed.description += f"\nJoin {self.channel.mention} to get involved!"
-        return embed
 
     async def __delMsgSafe(self, msg: Message) -> None:
         try:
