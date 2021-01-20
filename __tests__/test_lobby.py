@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 from datetime import datetime
 from random import choice, randint
 from string import digits
@@ -72,6 +72,8 @@ def embed(self, mention: bool = False, title: str = None) -> Embed:
 
 class TestLobby(AsyncTestCase):
     async def test_add_remove(self):
+        topic = "@players(min: 8)"
+        lobby = Lobby(bot(), channel(topic=topic))
         lobby = Lobby(bot(), channel())
         await lobby.add(player_one := member())
         assert len(lobby.players) == 1
@@ -86,7 +88,8 @@ class TestLobby(AsyncTestCase):
         assert len(lobby.players) == 0
 
     async def test_full_lobby(self):
-        lobby = Lobby(bot(), channel())
+        topic = "@players(min: 8, max: 8)"
+        lobby = Lobby(bot(), channel(topic=topic))
         await lobby.ready(first := member())
         assert not lobby.is_ready()
         for _ in range(7):
@@ -107,6 +110,8 @@ class TestLobby(AsyncTestCase):
             await lobby.ready(first)
 
     async def test_leavers(self):
+        topic = "@players(min: 8)"
+        lobby = Lobby(bot(), channel(topic=topic))
         lobby = Lobby(bot(), channel())
         await lobby.add(author := member())
         await lobby.add(leaver := member(), author)
@@ -123,7 +128,8 @@ class TestLobby(AsyncTestCase):
         await lobby.add(leaver)
 
     async def test_ready_unready(self):
-        lobby = Lobby(bot(), channel())
+        topic = "@players(min: 8)"
+        lobby = Lobby(bot(), channel(topic=topic))
         await lobby.add(player := member())
 
         await lobby.ready(player)
@@ -144,16 +150,17 @@ class TestLobby(AsyncTestCase):
         assert lobby.ready_count() == 1
 
     async def test_lobby_embed(self):
-        lobby = Lobby(bot(), channel())
+        topic = "@players(min: 8)"
+        lobby = Lobby(bot(), channel(topic=topic))
         embed = lobby.get_lobby_message()
         assert embed.title == "Lobby (0)"
-        assert embed.footer.text == "There are 8 spots remaining!"
+        assert embed.footer.text == "More players can join."
         assert embed.colour == Colour.orange()
 
         await lobby.add(player := member())
         embed = lobby.get_lobby_message()
         assert embed.title == "Lobby (1)"
-        assert embed.footer.text == "There are 8 spots remaining!"
+        assert embed.footer.text == "More players can join."
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 1
         assert embed.fields[0].name == "Alternates (1)"
@@ -166,7 +173,7 @@ class TestLobby(AsyncTestCase):
         await lobby.ready(player)
         embed = lobby.get_lobby_message()
         assert embed.title == "Lobby (1)"
-        assert embed.footer.text == "There are 7 spots remaining!"
+        assert embed.footer.text == "More players can join."
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 1
         assert embed.fields[0].name == "Players (1)"
@@ -180,7 +187,7 @@ class TestLobby(AsyncTestCase):
             await lobby.ready(member())
         embed = lobby.get_lobby_message()
         assert embed.title == "Lobby (8)"
-        assert "Use `?shuffle` or `?ranked`" in embed.footer.text
+        assert embed.footer.text == "Game ready. More players can join."
         assert embed.colour == Colour.green()
         assert len(embed.fields) == 1
         assert embed.fields[0].name == "Players (8)"
@@ -189,7 +196,7 @@ class TestLobby(AsyncTestCase):
         await lobby.unready(player)
         embed = lobby.get_lobby_message()
         assert embed.title == "Lobby (8)"
-        assert embed.footer.text == "There's one spot remaining!"
+        assert embed.footer.text == "More players can join."
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 2
         assert embed.fields[0].name == "Players (7)"
@@ -200,7 +207,7 @@ class TestLobby(AsyncTestCase):
         await lobby.remove(player)
         embed = lobby.get_lobby_message()
         assert embed.title == "Lobby (7)"
-        assert embed.footer.text == "There's one spot remaining!"
+        assert embed.footer.text == "More players can join."
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 1
         assert embed.fields[0].name == "Players (7)"
@@ -210,7 +217,7 @@ class TestLobby(AsyncTestCase):
             await lobby.add(member())
         embed = lobby.get_lobby_message()
         assert embed.title == "Lobby (107)"
-        assert embed.footer.text == "There's one spot remaining!"
+        assert embed.footer.text == "More players can join."
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 2
         assert embed.fields[1].name == "Alternates (100)"
@@ -219,7 +226,7 @@ class TestLobby(AsyncTestCase):
         await lobby.ready(member())
         embed = lobby.get_lobby_message()
         assert embed.title == "Lobby (108)"
-        assert "Use `?shuffle` or `?ranked`" in embed.footer.text
+        assert embed.footer.text == "Game ready. More players can join."
         assert embed.colour == Colour.green()
         assert len(embed.fields) == 2
         assert embed.fields[0].name == "Players (8)"
@@ -227,9 +234,24 @@ class TestLobby(AsyncTestCase):
         assert embed.fields[1].name == "Alternates (100)"
         assert embed.fields[1].value.count("\n") == 100
 
+        lobby.c.vMax = 8
+        embed = lobby.get_lobby_message()
+        assert embed.footer.text == "Game ready. More alternates can join."
+
+        lobby.c.vMax = 9
+        embed = lobby.get_lobby_message()
+        assert embed.footer.text == "Game ready. More players can join."
+
+        lobby.c.vMax = 8
+        lobby.c.vOverflow = False
+        embed = lobby.get_lobby_message()
+        assert embed.footer.text == "Game ready. "
+        assert embed.fields[1].name == "Not Ready (100)"
+
     async def test_game_start_message(self):
-        lobby = Lobby(bot(), ctx := channel("channel"))
-        lobby.get_lobby_message = AsyncMock()
+        topic = "@players(min: 8)"
+        lobby = Lobby(bot(), ctx := channel("channel", topic))
+        lobby.get_lobby_message = Mock()
         for _ in range(8):
             await lobby.ready(member())
         lobby.get_lobby_message.assert_called_with(

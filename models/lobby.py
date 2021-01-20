@@ -8,6 +8,7 @@ from discord import Message, File, Embed, Colour
 from discord import Member, TextChannel
 from discord.ext.commands import Bot
 
+from models.config import Config
 from models.player import Player
 from utils.composite import draw_composite
 from utils.handle import handle
@@ -20,6 +21,7 @@ class Lobby:
     def __init__(self, bot: Bot, channel: TextChannel):
         self.bot = bot
         self.channel: TextChannel = channel
+        self.c: Config = Config(channel.topic)
         self.players: List[Player] = []
         self.leavers: List[Player] = []
         self.orderings: Dict[Callable, MatchFinder] = {}
@@ -42,9 +44,12 @@ class Lobby:
                 self.channel, author is not None
             )
 
+        if not self.has_open_spots():
+            raise UsageException.no_overflow(self.channel)
+
         self.players.append(player)
 
-        if self.ready_count() == 7:
+        if self.c.vMax is not None and self.ready_count() == self.c.vMax - 1:
             await self.broadcast_game_almost_full()
 
         await self.show(title=f"{player.get_name()} has Joined!")
@@ -93,7 +98,7 @@ class Lobby:
         if player.is_ready():
             raise UsageException.already_ready(self.channel)
 
-        if self.is_ready():
+        if self.is_full():
             raise UsageException.game_is_full(self.channel)
 
         ind = self.players.index(player)
@@ -200,22 +205,24 @@ class Lobby:
                 inline=False,
             )
 
+        others = "Alternates" if self.c.vOverflow else "Not Ready"
         if alternates:
             embed.add_field(
-                name=f"Alternates ({len(alternates)})",
+                name=f"{others} ({len(alternates)})",
                 value="".join([f"• {p.get_name()}\n" for p in alternates]),
                 inline=False,
             )
 
-        remaining_spots = 8 - self.ready_count()
-        if remaining_spots == 0:
-            text = "Use `?shuffle` or `?ranked` to start building teams.\n"
-        elif remaining_spots == 1:
-            text = "There's one spot remaining!"
-        else:
-            text = f"There are {remaining_spots} spots remaining!"
+        game_ready = ""
+        if self.c.vMin is not None and self.ready_count() >= self.c.vMin:
+            game_ready = "Game ready. "
+        can_join = ""
+        if not self.is_full():
+            can_join = "More players can join."
+        elif self.has_open_spots():
+            can_join = "More alternates can join."
+        embed.set_footer(text=f"{game_ready}{can_join}")
 
-        embed.set_footer(text=text)
         return embed
 
     def has_joined(self, player: Player) -> bool:
@@ -231,8 +238,23 @@ class Lobby:
             0,
         )
 
+    def has_open_spots(self) -> bool:
+        if self.c.vOverflow:
+            return True
+
+        return len(self.players) < self.c.vMax
+
+    def is_full(self) -> bool:
+        if self.c.vMax is None:
+            return False
+
+        return self.ready_count() >= self.c.vMax
+
     def is_ready(self) -> bool:
-        return self.ready_count() == 8
+        if self.c.vMin is None:
+            return False
+
+        return self.ready_count() >= self.c.vMin
 
     def reset_orderings(self) -> None:
         self.orderings = {}

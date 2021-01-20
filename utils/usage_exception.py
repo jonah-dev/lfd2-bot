@@ -27,6 +27,13 @@ class UsageException(Exception):
         )
 
     @staticmethod
+    def no_overflow(channel: TextChannel):
+        return UsageException(
+            channel,
+            "This lobby is full. Unlimit alternates with @Overflow(true)",
+        )
+
+    @staticmethod
     def game_is_full(channel: TextChannel):
         return UsageException(
             channel,
