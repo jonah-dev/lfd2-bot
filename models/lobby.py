@@ -1,6 +1,6 @@
 from functools import reduce
 import asyncio
-from typing import Callable, List, Dict, Optional, Tuple
+from typing import Callable, List, Dict, Optional, Set, Tuple
 from asyncio.locks import Lock
 
 from discord import Message, File, Embed, Colour
@@ -132,7 +132,7 @@ class Lobby:
     async def get_next_match(self, order: Callable) -> Optional[Match]:
         if order.__name__ not in self.orderings:
             ready, _ = self.get_players()
-            match_finder = await MatchFinder.new(ready, order)
+            match_finder = await MatchFinder.new(ready, self.c.vTeams, order)
             self.orderings[order.__name__] = match_finder
 
         return self.orderings[order.__name__].get_next_match()
@@ -146,14 +146,12 @@ class Lobby:
             raise UsageException.seen_all_matches(self.channel)
 
         (number, match) = next_match
-        (team_one, team_two) = match
-        composite = await draw_composite(
-            number,
-            team_one,
-            team_two,
-            self.channel.id,
-        )
-        await self.channel.send(file=File(composite))
+        embed = Embed(colour=Colour.teal())
+        embed.title = f"Shuffle {number}"
+        for i, team in enumerate(match):
+            players = "".join([f"• {p.get_name()}\n" for p in team])
+            embed.add_field(name=f"Team {i}", value=players, inline=False)
+        await self.channel.send(embed)
 
     async def show_ranking(self, filter_lobby: bool):
         scores = await get_scores(self.channel)

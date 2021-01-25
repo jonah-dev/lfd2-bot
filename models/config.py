@@ -21,7 +21,7 @@ class Config:
         self.bot = bot
 
         self.vMax: Optional[int] = None
-        self.vMin: Optional[int] = None
+        self.vMin: int = 0
         self.vOverflow: bool = True
         self.vTeams: Optional[List[int]] = None
         self.vBroadcastChannels: List = list()
