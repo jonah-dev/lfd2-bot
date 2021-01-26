@@ -1,5 +1,5 @@
 from itertools import combinations
-from typing import Callable, FrozenSet, Optional, List, Set, Tuple, TypeVar
+from typing import FrozenSet, Optional, List, Set, Tuple, TypeVar
 
 from models.player import Player
 
@@ -46,12 +46,16 @@ class Verses:
         self.parent = prev_team
         self.players = new_team
         if not team_sizes:
-            matches_ref.add(self._finalize_match())
+            if match := self._finalize_match():
+                matches_ref.add(match)
             return
 
         pool = list(filter(lambda p: p not in new_team, pool))
         team_size, team_sizes = _pop(team_sizes)
-        verses_teams = combinations(pool, team_size)
+        if len(pool) < team_size:
+            verses_teams = iter([pool])
+        else:
+            verses_teams = combinations(pool, team_size)
         for opponents in verses_teams:
             Verses(self, opponents, pool, team_sizes, matches_ref)
 
@@ -67,36 +71,7 @@ class Verses:
         # duplicates from the final list.
 
         # Player order does not matter
-        matches = [frozenset(t.players) for t in teams]
+        matches = [frozenset(t.players) for t in teams if t.players]
 
         # Verses order does not matter
         return frozenset(matches)
-
-
-class MatchFinder:
-    @staticmethod
-    async def new(
-        players: List[Player],
-        teams: List[int],
-        reorder: Optional[Callable] = None,
-    ):
-        matches = set()
-        Verses(None, tuple(), players, teams, matches)
-
-        matches = list(matches)
-        if reorder is not None:
-            await reorder(matches)
-
-        return MatchFinder(matches)
-
-    def __init__(self, matches: List[Match]):
-        self.match_num: int = 0
-        self.matches: List[Match] = matches
-
-    def get_next_match(self) -> Optional[Tuple[int, Match]]:
-        if self.match_num >= len(self.matches):
-            return None
-
-        match = self.matches[self.match_num]
-        self.match_num += 1
-        return (self.match_num, match)

@@ -1,24 +1,19 @@
-import re
-import yaml
+from utils.directive import directive
+import utils.directive as directives
 import inspect
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, List, Optional, Tuple
 
 from discord.channel import TextChannel
 from discord.ext.commands import Bot
 
-DIRECTIVE = re.compile(r"^\s*@(?P<directive>.*)\((?P<props>.*)\)\s*$", re.M)
-
-ALL_DIRECTIVES: Dict[str, Callable] = {}
-
-
-def directive(fn):
-    ALL_DIRECTIVES[fn.__name__] = fn
-
 
 class Config:
-    def __init__(self, topic: str, bot: Bot):
+    def __init__(self, topic: str, bot: Bot, installCommand: Callable):
+        import plugins.SuperCashBrosLeftForDead.SuperCashBrosLeftForDead  # noqa F401
+
         self.bot = bot
+        self.installCommand = installCommand
 
         self.vMax: Optional[int] = None
         self.vMin: int = 0
@@ -29,35 +24,25 @@ class Config:
         self.issues = {}
 
         try:
-            self.install(Config.parse(topic))
+            self.install(directives.parse_directives(topic))
         except Exception:
             self.issue(
                 "Error parsing topic."
                 + " Directives must start on their own line: Ex: @players(...)"
             )
 
-    @staticmethod
-    def parse(topic: str) -> Dict[str, any]:
-        lines = DIRECTIVE.findall(topic)
-        return {d: p for [d, p] in lines}
-
-    def install(self, directives):
-        for d in directives:
+    def install(self, directives: List[Tuple[Callable, str]]):
+        for installer, props in directives:
             try:
-                if d in ALL_DIRECTIVES:
-                    props = directives[d]
-                    installer = ALL_DIRECTIVES[d]
-                    installer(self, props)
-                else:
-                    self.issue(f"Unknown directive: {d}")
+                installer(self, props)
             except Exception:
-                self.issue(f"Error installing directive: {d}")
+                self.issue(f"Error installing directive: {installer.__name__}")
 
     # -- Directives -----------------------------------------------------------
 
     @directive
     def players(self, props: str):
-        props = self.parseMulti(props)
+        props = directives.parse_multi(props)
         if type(props) is not dict:
             self.issue("You must provide a value. Ex: `{min: 8, max: 10`}")
             return
@@ -74,7 +59,7 @@ class Config:
 
     @directive
     def teams(self, props: str):
-        props = self.parseSingle(props)
+        props = directives.parse_single(props)
         if type(props) is not list:
             self.issue("You must provide a list of teams. Ex: [4, 4]")
             return
@@ -87,7 +72,7 @@ class Config:
 
     @directive
     def overflow(self, props: str):
-        props = self.parseSingle(props)
+        props = directives.parse_single(props)
         if type(props) is not bool:
             self.issue("You must provide either True or False.")
             return
@@ -96,7 +81,7 @@ class Config:
 
     @directive
     def broadcast(self, props: str):
-        props = self.parseSingle(props)
+        props = directives.parse_single(props)
         if type(props) is str:
             destinations = list(props)
         elif type(props) is list:
@@ -118,17 +103,6 @@ class Config:
                     self.vBroadcastChannels.append(channel)
 
     # -- Helpers --------------------------------------------------------------
-
-    @staticmethod
-    def parseSingle(props: str) -> Optional[Any]:
-        try:
-            return yaml.load(props)
-        except Exception:
-            return None
-
-    @staticmethod
-    def parseMulti(props: str) -> Optional[Dict[str, Any]]:
-        return Config.parseSingle("{" + props + "}")
 
     def issue(self, message: str, skip_frames: int = 1):
         area = inspect.stack()[skip_frames].function

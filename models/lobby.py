@@ -1,31 +1,45 @@
 from functools import reduce
 import asyncio
-from typing import Callable, List, Dict, Optional, Set, Tuple
 from asyncio.locks import Lock
+from random import shuffle
 
-from discord import Message, File, Embed, Colour
+from typing import List, Dict, Optional, Tuple
+
+from discord import Message, Embed, Colour
 from discord import Member, TextChannel
 from discord.ext.commands import Bot
+from discord.ext.commands.core import Command
 
 from models.config import Config
 from models.player import Player
-from utils.composite import draw_composite
 from utils.handle import handle
 from utils.usage_exception import UsageException
-from matchmaking.match_finder import MatchFinder, Match
-from matchmaking.linear_regression_ranker import get_scores
+from utils.verses import Verses
 
 
 class Lobby:
     def __init__(self, bot: Bot, channel: TextChannel):
         self.bot = bot
         self.channel: TextChannel = channel
-        self.c: Config = Config(channel.topic, bot)
+        self.plugin_commands: Dict[str, Command] = {}
+        self.c: Config = Config(channel.topic, bot, self.installCommands)
         self.players: List[Player] = []
         self.leavers: List[Player] = []
-        self.orderings: Dict[Callable, MatchFinder] = {}
         self.temp_messages: List[Message] = []
         self.show_lobby_lock: Lock = Lock()
+        self._cache = {}
+
+    # -- Plugins --------------------------------------------------------------
+
+    def installCommands(self, command: Command):
+        invoked_with = f"?{command.name}"
+        if invoked_with in self.plugin_commands:
+            self.c.issue(f"Duplicate plugin command, `{invoked_with}`", 2)
+            return
+
+        self.plugin_commands[invoked_with] = command
+
+    # -- Operations -----------------------------------------------------------
 
     async def add(self, user: Member, author: Optional[Member] = None) -> None:
         if author is not None:
@@ -99,7 +113,7 @@ class Lobby:
 
         ind = self.players.index(player)
         self.players[ind].set_ready()
-        self.reset_orderings()
+        self.clear_cache()
 
         if self.c.vMax is not None and self.ready_count() == self.c.vMax - 1:
             await self.broadcast_game_almost_full()
@@ -117,7 +131,7 @@ class Lobby:
 
         ind = self.players.index(player)
         self.players[ind].set_unready()
-        self.reset_orderings()
+        self.clear_cache()
 
         await self.show(title=f"{player.get_name()} is not Ready")
 
@@ -129,54 +143,26 @@ class Lobby:
 
         return ready, alternates
 
-    async def get_next_match(self, order: Callable) -> Optional[Match]:
-        if order.__name__ not in self.orderings:
-            ready, _ = self.get_players()
-            match_finder = await MatchFinder.new(ready, self.c.vTeams, order)
-            self.orderings[order.__name__] = match_finder
-
-        return self.orderings[order.__name__].get_next_match()
-
-    async def show_next_match(self, order: Callable) -> None:
+    async def show_next_shuffle(self) -> None:
         if not self.is_ready():
             raise UsageException.not_enough_for_match(self.channel)
 
-        next_match = await self.get_next_match(order)
+        if "shuffles" not in self._cache:
+            matches = self.get_matches()
+            shuffle(matches)
+            self._cache["shuffles"] = iter(enumerate(matches))
+
+        next_match = next(self._cache["shuffles"], None)
         if next_match is None:
             raise UsageException.seen_all_matches(self.channel)
 
         (number, match) = next_match
         embed = Embed(colour=Colour.teal())
-        embed.title = f"Shuffle {number}"
+        embed.title = f"Shuffle {number+1}"
         for i, team in enumerate(match):
             players = "".join([f"• {p.get_name()}\n" for p in team])
-            embed.add_field(name=f"Team {i}", value=players, inline=False)
-        await self.channel.send(embed)
-
-    async def show_ranking(self, filter_lobby: bool):
-        scores = await get_scores(self.channel)
-        scores = scores.items()
-        scores = sorted(scores, key=lambda item: item[1], reverse=True)
-        embed = Embed(colour=Colour.blurple())
-        embed.title = "Lobby Rankings"
-        rank = 1
-        for user_id, score in scores:
-            user = self.bot.get_user(user_id)
-            if user is None:
-                continue
-
-            if filter_lobby and Player(user) not in self.players:
-                continue
-
-            embed.add_field(name=f"{rank}. {user}", value=score, inline=False)
-            rank += 1
-
-        if len(embed.fields) == 0:
-            embed.add_field(
-                name="No players",
-                value="No players in the lobby (or channel) have a ranking.",
-            )
-
+            players = players if players else "(empty)"
+            embed.add_field(name=f"Team {i+1}", value=players, inline=False)
         await self.channel.send(embed=embed)
 
     def get_lobby_message(
@@ -253,8 +239,13 @@ class Lobby:
 
         return self.ready_count() >= self.c.vMin
 
-    def reset_orderings(self) -> None:
-        self.orderings = {}
+    def get_matches(self) -> List:
+        matches = set()
+        Verses(None, tuple(), self.players, self.c.vTeams, matches)
+        return list(matches)
+
+    def clear_cache(self) -> None:
+        self._cache = {}
 
     async def broadcast_game_almost_full(self) -> None:
         destinations = self.c.vBroadcastChannels

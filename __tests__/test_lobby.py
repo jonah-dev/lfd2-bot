@@ -1,10 +1,10 @@
-from unittest.mock import AsyncMock, Mock, patch
-from datetime import datetime
-from random import choice, randint
-from string import digits
-from typing import Callable, List
-
 from aiounittest import AsyncTestCase
+from unittest.mock import AsyncMock, Mock
+from random import choice
+from string import digits
+
+from typing import List
+
 from discord import Member, Status, Colour
 from discord import TextChannel, VoiceChannel
 from discord.ext.commands.bot import Bot
@@ -12,9 +12,6 @@ from discord.embeds import Embed
 
 from models.lobby import Lobby
 from utils.usage_exception import UsageException
-from matchmaking.game_data import Game, GameData, Team
-from matchmaking.linear_regression_ranker import get_ranker
-from matchmaking.random_shuffler import get_shuffler
 
 
 def id() -> str:
@@ -50,19 +47,6 @@ def member(status: Status = Status.online) -> Member:
     member.bot = None
     member.status = status
     return member
-
-
-async def game_data(_channel) -> GameData:
-    return GameData(
-        [
-            Game(
-                datetime.today(),
-                Team([id() for _ in range(4)], randint(1000, 3000)),
-                Team([id() for _ in range(4)], randint(1000, 3000)),
-            )
-            for _ in range(5)
-        ]
-    )
 
 
 def embed(self, mention: bool = False, title: str = None) -> Embed:
@@ -259,28 +243,22 @@ class TestLobby(AsyncTestCase):
             title=f"Game Starting in #{ctx.name}",
         )
 
-    @patch("matchmaking.game_data.GameData.fetch", game_data)
-    async def test_match_combinations(self):
+    async def test_get_matches(self):
         topic = "@teams([4, 4])"
-        ctx = channel(topic=topic)
+        lobby = Lobby(bot(), channel(topic=topic))
+        for _ in range(8):
+            await lobby.ready(member())
 
-        async def test_with_ordering(order: Callable):
-            lobby = Lobby(bot(), ctx)
-            for _ in range(8):
-                await lobby.ready(member())
+        seen = set()
+        matches = iter(lobby.get_matches())
+        for _ in range(35):  # 35 times: (8 choose 4) / 2
+            match = next(matches)
+            assert len(match) == 2
+            assert match not in seen
+            seen.add(match)
 
-            seen = set()
-            for _ in range(35):  # 35 times: (8 choose 4) / 2
-                (_, match) = await lobby.get_next_match(order)
-                assert len(match) == 2
-                assert match not in seen
-                seen.add(match)
-
-            final = await lobby.get_next_match(order)
-            assert final is None
-
-        await test_with_ordering(get_shuffler())
-        await test_with_ordering(get_ranker(ctx))
+        final = next(matches, None)
+        assert final is None
 
     async def test_shuffle(self):
         topic = "@teams([4, 4])"
@@ -289,14 +267,16 @@ class TestLobby(AsyncTestCase):
             await lobby.ready(member())
 
         ctx.reset_mock()
-        await lobby.show_next_match(get_shuffler())
+        await lobby.show_next_shuffle()
         assert ctx.send.await_count == 1
-        args, _ = ctx.send.await_args_list[0]
-        assert len(args) == 1
-        embed = args[0]
+        _, kwargs = ctx.send.await_args_list[0]
+        assert len(kwargs) == 1
+        embed = kwargs["embed"]
         assert embed.title == "Shuffle 1"
         assert len(embed.fields) == 2
+        assert embed.fields[0].name == "Team 1"
         assert embed.fields[0].value.count("\n") == 4
+        assert embed.fields[1].name == "Team 2"
         assert embed.fields[1].value.count("\n") == 4
 
     async def test_broadcast(self):

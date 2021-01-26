@@ -9,7 +9,11 @@
       "type": "python",
       "request": "launch",
       "program": "bot.py",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      // "justMyCode": false,
+      "env": {
+        "DISCORD_TOKEN": "NzM1NTg1NDMwMDk0NzQxNTM1.XxiZUQ.aHno9GnuXGdckn5-B1zHVjLfgN4"
+      }
     },
     {
       "name": "Python: Attach using Process Id",

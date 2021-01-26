@@ -55,7 +55,7 @@ async def draw_composite(
 
 
 def draw_game_number(draw: ImageDraw.Draw, shuffle_num: int) -> None:
-    text = f"Shuffle {shuffle_num}"
+    text = f"Match {shuffle_num + 1}"
     draw.text((10, 10), text, font=shuffle_font, fill=(81, 81, 81, 255))
 
 
