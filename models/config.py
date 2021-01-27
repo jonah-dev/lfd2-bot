@@ -9,12 +9,15 @@ from discord.ext.commands import Bot
 
 
 class Config:
-    def __init__(self, topic: str, bot: Bot, installCommand: Callable):
+    def __init__(
+        self, channel: TextChannel, bot: Bot, installCommand: Callable
+    ):
         import plugins.SuperCashBrosLeftForDead.SuperCashBrosLeftForDead  # noqa F401
 
         self.bot = bot
         self.installCommand = installCommand
 
+        self.vName: str = f"#{channel.name}"
         self.vMax: Optional[int] = None
         self.vMin: int = 0
         self.vOverflow: bool = True
@@ -23,7 +26,7 @@ class Config:
 
         self.issues = {}
 
-        self.install(topic)
+        self.install(channel.topic)
 
     def install(self, update: str):
         for installer, props in directives.parse_directives(update):
@@ -40,6 +43,15 @@ class Config:
                 )
 
     # -- Directives -----------------------------------------------------------
+
+    @directive
+    def name(self, props: str):
+        props = directives.parse_single(props)
+        if type(props) is not str:
+            self.issue("You must provide a value, Ex: `'Game night!'`")
+            return
+
+        self.vName = props
 
     @directive
     def players(self, props: str):

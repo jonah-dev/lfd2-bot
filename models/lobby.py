@@ -22,7 +22,7 @@ class Lobby:
         self.bot = bot
         self.channel: TextChannel = channel
         self.plugin_commands: Dict[str, Command] = {}
-        self.c: Config = Config(channel.topic, bot, self.installCommands)
+        self.c: Config = Config(channel, bot, self.installCommands)
         self.players: List[Player] = []
         self.leavers: List[Player] = []
         self.temp_messages: dict[str, List[Message]] = {}
@@ -108,7 +108,7 @@ class Lobby:
             await self.broadcast_game_almost_full()
 
         if self.is_ready():
-            title = f"Game Starting in #{self.channel.name}"
+            title = f"Game Starting in {self.c.vName}"
             await self.show(title=title, mention=True)
         else:
             await self.show(title=f"{player.get_name()} is Ready!")
@@ -163,6 +163,7 @@ class Lobby:
         embed.title = "Lobby Config"
 
         settings = (
+            f"@name(`{self.c.vName}`)\n"
             f"@players(min: `{self.c.vMin}`, max: `{self.c.vMax}`)\n"
             f"@teams(`{self.c.vTeams}`)\n"
             f"@overflow(`{self.c.vOverflow}`)\n"
@@ -279,7 +280,7 @@ class Lobby:
                 pass
 
         broadcasts = []
-        title = f"Game almost full in #{self.channel.name}"
+        title = f"Game Almost Full in {self.c.vName} Lobby!"
         message = self.get_lobby_message(False, title)
         for dest in destinations:
             broadcasts.append(trySend(dest, message))

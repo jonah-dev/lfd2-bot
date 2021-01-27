@@ -1,5 +1,6 @@
 from aiounittest import AsyncTestCase
 from unittest.mock import AsyncMock, patch
+from discord.channel import TextChannel
 
 from discord.ext.commands.bot import Bot
 
@@ -15,6 +16,13 @@ from utils.directive import (
 def bot() -> Bot:
     bot = AsyncMock(spec=Bot)
     return bot
+
+
+def channel(name: str = "", topic: str = "") -> TextChannel:
+    channel = AsyncMock(spec=TextChannel)
+    channel.name = name
+    channel.topic = topic
+    return channel
 
 
 def noop():
@@ -114,12 +122,18 @@ class TestConfig(AsyncTestCase):
         v = parse_single(next(c)[1])
         assert type(v) is bool and not v
 
+    async def test_default_name(self):
+        c = Config(channel("Default Name", ""), bot(), noop)
+        assert c.vName == "#Default Name"
+
     async def test_config_amongus(self):
         topic = """
+            @name("Amongus")
             @players(min: 6, max: 10)
             @overflow(true)
         """
-        c = Config(topic, bot(), noop)
+        c = Config(channel("foo", topic), bot(), noop)
+        assert c.vName == "Amongus"
         assert c.vMax == 10
         assert c.vMin == 6
         assert c.vOverflow
@@ -127,10 +141,12 @@ class TestConfig(AsyncTestCase):
 
     async def test_config_warzone(self):
         topic = """
+            @name("Warzone")
             @players(min: 1, max: 4)
             @overflow(false)
         """
-        c = Config(topic, bot(), noop)
+        c = Config(channel("foo", topic), bot(), noop)
+        assert c.vName == "Warzone"
         assert c.vMax == 4
         assert c.vMin == 1
         assert not c.vOverflow
@@ -138,11 +154,13 @@ class TestConfig(AsyncTestCase):
 
     async def test_config_left_for_dead(self):
         topic = """
+            @name("Left 4 Dead 2")
             @overflow(true)
             @players(min: 8, max: 8)
             @teams([4, 4])
         """
-        c = Config(topic, bot(), noop)
+        c = Config(channel("foo", topic), bot(), noop)
+        assert c.vName == "Left 4 Dead 2"
         assert c.vMax == 8
         assert c.vMin == 8
         assert c.vOverflow
@@ -150,11 +168,13 @@ class TestConfig(AsyncTestCase):
 
     async def test_config_dead_by_daylight(self):
         topic = """
+            @name("Dead by Daylight")
             @teams([4, 1])
             @players(min: 4, max: 5)
             @overflow(true)
         """
-        c = Config(topic, bot(), noop)
+        c = Config(channel("foo", topic), bot(), noop)
+        assert c.vName == "Dead by Daylight"
         assert c.vMax == 5
         assert c.vMin == 4
         assert c.vOverflow

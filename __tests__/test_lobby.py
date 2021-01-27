@@ -314,6 +314,7 @@ class TestLobby(AsyncTestCase):
 
     async def test_config(self):
         topic = """
+            @name({})
             @broadcast(4)
             @players("dog")
             @teams()
@@ -327,7 +328,12 @@ class TestLobby(AsyncTestCase):
         assert embed.title == "Lobby Config"
         assert len(embed.fields) == 2
         assert embed.fields[0].name == "Settings"
-        assert embed.fields[0].value.count("\n") == 4
+        assert embed.fields[0].value.count("\n") == 5
+        assert embed.fields[1].name == "Issues"
+        assert embed.fields[1].value.count("\n") == 12
+
+        lobby.c.install("@name('Game night!')")
+        embed = lobby.get_config_message()
         assert embed.fields[1].name == "Issues"
         assert embed.fields[1].value.count("\n") == 10
 
@@ -352,6 +358,7 @@ class TestLobby(AsyncTestCase):
         assert embed.fields[1].value.count("\n") == 2
 
         ctx.topic = """
+            @name("Game Night!")
             @broadcast([])
             @players(min: 3)
             @teams([2, 2])
