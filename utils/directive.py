@@ -24,7 +24,7 @@ def parse_directives(topic: str) -> Iterator[Tuple[Callable, str]]:
 
 def parse_single(props: str) -> Optional[Any]:
     try:
-        return yaml.load(props)
+        return yaml.safe_load(props)
     except Exception:
         return None
 

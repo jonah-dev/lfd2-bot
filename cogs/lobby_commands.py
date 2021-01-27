@@ -121,6 +121,9 @@ class LobbyCommands(Cog):
             return
 
         ctx = await self.bot.get_context(message)
+        if ctx.bot:
+            return
+
         lobby = self.get_lobby(ctx)
 
         invoked_with = message.content.partition(" ")[0]
