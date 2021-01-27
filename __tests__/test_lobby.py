@@ -311,3 +311,52 @@ class TestLobby(AsyncTestCase):
         assert dest_one.send.call_count == 1
         assert dest_two.send.call_count == 1
         assert misc_channel.send.call_count == 0
+
+    async def test_config(self):
+        topic = """
+            @broadcast(4)
+            @players("dog")
+            @teams()
+            @overflow([])
+            @foo()
+        """
+        lobby = Lobby(bot(), ctx := channel(topic=topic))
+        await lobby.show_config()
+        assert ctx.send.await_count == 1
+        embed = ctx.send.await_args.kwargs["embed"]
+        assert embed.title == "Lobby Config"
+        assert len(embed.fields) == 2
+        assert embed.fields[0].name == "Settings"
+        assert embed.fields[0].value.count("\n") == 4
+        assert embed.fields[1].name == "Issues"
+        assert embed.fields[1].value.count("\n") == 10
+
+        lobby.c.install("@teams([2, 2])")
+        embed = lobby.get_config_message()
+        assert embed.fields[1].name == "Issues"
+        assert embed.fields[1].value.count("\n") == 8
+
+        lobby.c.install("@overflow(False)")
+        embed = lobby.get_config_message()
+        assert embed.fields[1].name == "Issues"
+        assert embed.fields[1].value.count("\n") == 6
+
+        lobby.c.install("@broadcast([])")
+        embed = lobby.get_config_message()
+        assert embed.fields[1].name == "Issues"
+        assert embed.fields[1].value.count("\n") == 4
+
+        lobby.c.install("@players(min: 3)")
+        embed = lobby.get_config_message()
+        assert embed.fields[1].name == "Issues"
+        assert embed.fields[1].value.count("\n") == 2
+
+        ctx.topic = """
+            @broadcast([])
+            @players(min: 3)
+            @teams([2, 2])
+            @overflow(False)
+        """
+        lobby = Lobby(bot(), ctx)
+        embed = lobby.get_config_message()
+        assert len(embed.fields) == 1

@@ -1,7 +1,7 @@
 import re
 import yaml
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterator, Optional, Tuple
 
 
 DIRECTIVE = re.compile(r"^\s*@(?P<directive>.*)\((?P<props>.*)\)\s*$", re.M)
@@ -13,13 +13,13 @@ def directive(fn):
     ALL_DIRECTIVES[fn.__name__] = fn
 
 
-def parse_directives(topic: str) -> List[Tuple[Callable, str]]:
+def parse_directives(topic: str) -> Iterator[Tuple[Callable, str]]:
     lines = DIRECTIVE.findall(topic)
-    directives = []
     for [name, props] in lines:
-        if fn := ALL_DIRECTIVES[name]:
-            directives.append((fn, props))
-    return directives
+        if fn := ALL_DIRECTIVES.get(name, None):
+            yield (fn, props)
+        else:
+            yield (None, f"@{name}({props})")
 
 
 def parse_single(props: str) -> Optional[Any]:

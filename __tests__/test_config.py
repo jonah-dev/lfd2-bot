@@ -53,19 +53,17 @@ class TestConfig(AsyncTestCase):
             @string("foo")
         """
         c = parse_directives(topic)
-        assert len(c) == 4
-        assert parse_single(c[0][1]) == 123
-        assert parse_single(c[1][1]) == 4.56
-        assert parse_single(c[2][1])
-        assert parse_single(c[3][1]) == "foo"
+        assert parse_single(next(c)[1]) == 123
+        assert parse_single(next(c)[1]) == 4.56
+        assert parse_single(next(c)[1])
+        assert parse_single(next(c)[1]) == "foo"
 
     async def test_parse_multi(self):
         topic = """
             @foo(int: 123, float: 4.56, bool: true, string: "foo")
         """
         c = parse_directives(topic)
-        assert len(c) == 1
-        props = parse_multi(c[0][1])
+        props = parse_multi(next(c)[1])
         assert props["int"] == 123
         assert props["float"] == 4.56
         assert props["bool"]
@@ -76,8 +74,7 @@ class TestConfig(AsyncTestCase):
             @foo(comma: ",", colon: ":", escape: '"')
         """
         c = parse_directives(topic)
-        assert len(c) == 1
-        props = parse_multi(c[0][1])
+        props = parse_multi(next(c)[1])
         assert props["comma"] == ","
         assert props["colon"] == ":"
         assert props["escape"] == '"'
@@ -89,34 +86,32 @@ class TestConfig(AsyncTestCase):
             @noquote(foo)
         """
         c = parse_directives(topic)
-        assert parse_single(c[0][1]) == "foo"
-        assert parse_single(c[1][1]) == "foo"
-        assert parse_single(c[2][1]) == "foo"
+        assert parse_single(next(c)[1]) == "foo"
+        assert parse_single(next(c)[1]) == "foo"
+        assert parse_single(next(c)[1]) == "foo"
 
     async def test_parse_bool(self):
         topic = """
             @TRUE(TRUE)
             @True(True)
             @true(true)
-            @tRuE(tRuE)
             @FALSE(FALSE)
             @False(False)
             @false(false)
-            @FaLsE(FaLsE)
         """
         c = parse_directives(topic)
-        v = parse_single(c[0][1])
+        v = parse_single(next(c)[1])
         assert type(v) is bool and v
-        v = parse_single(c[1][1])
+        v = parse_single(next(c)[1])
         assert type(v) is bool and v
-        v = parse_single(c[2][1])
+        v = parse_single(next(c)[1])
         assert type(v) is bool and v
 
-        v = parse_single(c[4][1])
+        v = parse_single(next(c)[1])
         assert type(v) is bool and not v
-        v = parse_single(c[5][1])
+        v = parse_single(next(c)[1])
         assert type(v) is bool and not v
-        v = parse_single(c[6][1])
+        v = parse_single(next(c)[1])
         assert type(v) is bool and not v
 
     async def test_config_amongus(self):

@@ -25,8 +25,8 @@ class Lobby:
         self.c: Config = Config(channel.topic, bot, self.installCommands)
         self.players: List[Player] = []
         self.leavers: List[Player] = []
-        self.temp_messages: List[Message] = []
-        self.show_lobby_lock: Lock = Lock()
+        self.temp_messages: dict[str, List[Message]] = {}
+        self.locks: Dict[str, Lock] = {}
         self._cache = {}
 
     # -- Plugins --------------------------------------------------------------
@@ -34,7 +34,9 @@ class Lobby:
     def installCommands(self, command: Command):
         invoked_with = f"?{command.name}"
         if invoked_with in self.plugin_commands:
-            self.c.issue(f"Duplicate plugin command, `{invoked_with}`", 2)
+            self.c.issue(
+                f"Duplicate plugin command: `?{invoked_with}`", skip_frames=2
+            )
             return
 
         self.plugin_commands[invoked_with] = command
@@ -84,21 +86,8 @@ class Lobby:
         title: Optional[str] = None,
         temp: bool = True,
     ) -> None:
-        await self.show_lobby_lock.acquire()
-        try:
-            ops = [self.__delMsgSafe(m) for m in self.temp_messages]
-            self.temp_messages = []
-            if len(ops) > 0:
-                await asyncio.wait(ops)
-
-            embed = self.get_lobby_message(title=title, mention=mention)
-            msg = await self.channel.send(embed=embed)
-            if temp:
-                self.temp_messages.append(msg)
-        except BaseException as exception:
-            await handle(self.channel, exception)
-        finally:
-            self.show_lobby_lock.release()
+        embed = self.get_lobby_message(title=title, mention=mention)
+        await self.__replaceMessage("lobby", embed, temp)
 
     async def ready(self, user: Member) -> None:
         player = Player(user)
@@ -164,6 +153,37 @@ class Lobby:
             players = players if players else "(empty)"
             embed.add_field(name=f"Team {i+1}", value=players, inline=False)
         await self.channel.send(embed=embed)
+
+    async def show_config(self) -> None:
+        embed = embed = self.get_config_message()
+        await self.__replaceMessage("config", embed)
+
+    def get_config_message(self) -> Embed:
+        embed = Embed(colour=Colour.from_rgb(255, 192, 203))
+        embed.title = "Lobby Config"
+
+        settings = (
+            f"@players(min: `{self.c.vMin}`, max: `{self.c.vMax}`)\n"
+            f"@teams(`{self.c.vTeams}`)\n"
+            f"@overflow(`{self.c.vOverflow}`)\n"
+            f"@broadcast(`{self.c.vBroadcastChannels}`)\n"
+        )
+        embed.add_field(name="Settings", value=settings, inline=False)
+
+        if self.c.issues:
+            issues = ""
+            for area in self.c.issues:
+                issues = issues + f"{area}\n"
+                for i in self.c.issues[area]:
+                    issues = issues + f"• *{i}*\n"
+            embed.add_field(name="Issues", value=issues, inline=False)
+
+        footer = (
+            "Use ?config @directive(...) or the channel's"
+            " topic to change settings."
+        )
+        embed.set_footer(text=footer)
+        return embed
 
     def get_lobby_message(
         self,
@@ -266,6 +286,30 @@ class Lobby:
 
         if broadcasts:
             await asyncio.wait(broadcasts)
+
+    async def __replaceMessage(
+        self, type: str, embed: Embed, is_temp: bool = True
+    ):
+        if type not in self.locks:
+            self.locks[type] = Lock()
+
+        if type not in self.temp_messages:
+            self.temp_messages[type] = []
+
+        await self.locks[type].acquire()
+        try:
+            ops = [self.__delMsgSafe(m) for m in self.temp_messages[type]]
+            self.temp_messages[type] = []
+            if len(ops) > 0:
+                await asyncio.wait(ops)
+
+            msg = await self.channel.send(embed=embed)
+            if is_temp:
+                self.temp_messages[type].append(msg)
+        except BaseException as exception:
+            await handle(self.channel, exception)
+        finally:
+            self.locks[type].release()
 
     async def __delMsgSafe(self, msg: Message) -> None:
         try:

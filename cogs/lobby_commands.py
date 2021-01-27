@@ -1,7 +1,7 @@
 import datetime
 import json
 import urllib.request
-from typing import Dict
+from typing import Dict, Optional
 
 from discord import Embed, Colour, Member, Message
 from discord.ext import tasks
@@ -93,6 +93,17 @@ class LobbyCommands(Cog):
         """Create teams if possible"""
         lobby = self.get_lobby(ctx)
         await lobby.show_next_shuffle()
+
+    @command()
+    async def config(self, ctx: Context, update: Optional[str]):
+        """Shows and updates the lobby config"""
+        lobby = self.get_lobby(ctx)
+        if update:
+            # Discord.py parsing breaks on spaces. We want everything.
+            update = ctx.message.content.strip("?config ")
+            lobby.c.install(update)
+
+        await lobby.show_config()
 
     @command()
     async def clear(self, ctx: Context):
