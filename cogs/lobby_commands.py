@@ -1,16 +1,13 @@
 import datetime
 import json
 import urllib.request
-from typing import Dict
-from utils.option_switch import option_switch
+from typing import Dict, Optional
 
-from discord import Embed, Colour, Member
+from discord import Embed, Colour, Member, Message
 from discord.ext import tasks
 from discord.ext.commands import command, Cog, Bot, Context
 
 from models.lobby import Lobby
-from matchmaking.linear_regression_ranker import get_ranker
-from matchmaking.random_shuffler import get_shuffler
 
 
 def setup(bot: Bot):
@@ -95,28 +92,18 @@ class LobbyCommands(Cog):
     async def shuffle(self, ctx: Context):
         """Create teams if possible"""
         lobby = self.get_lobby(ctx)
-        await lobby.show_next_match(get_shuffler())
+        await lobby.show_next_shuffle()
 
     @command()
-    async def ranked(self, ctx: Context):
-        """Create fair teams based on player history"""
+    async def config(self, ctx: Context, update: Optional[str]):
+        """Shows and updates the lobby config"""
         lobby = self.get_lobby(ctx)
-        await lobby.show_next_match(get_ranker(ctx.channel)),
+        if update:
+            # Discord.py parsing breaks on spaces. We want everything.
+            update = ctx.message.content.strip("?config ")
+            lobby.c.install(update)
 
-    @command()
-    async def leaderboard(self, ctx: Context, option: str = None):
-        """See player ranks"""
-        then = option_switch(
-            ctx.channel,
-            option,
-            {
-                "lobby": lambda l: l.show_ranking(filter_lobby=True),
-                None: lambda l: l.show_ranking(filter_lobby=False),
-            },
-        )
-
-        lobby = self.get_lobby(ctx)
-        await then(lobby)
+        await lobby.show_config()
 
     @command()
     async def clear(self, ctx: Context):
@@ -125,6 +112,34 @@ class LobbyCommands(Cog):
             self.lobbies[ctx.channel.id] = Lobby(self.bot, ctx.channel)
 
         await self.lobbies[ctx.channel.id].show()
+
+    # ------- Events --------
+
+    @Cog.listener()
+    async def on_message(self, message: Message):
+        if await self.bot.get_prefix(message) != "?":
+            return
+
+        ctx = await self.bot.get_context(message)
+        if ctx.bot:
+            return
+
+        lobby = self.get_lobby(ctx)
+
+        invoked_with = message.content.partition(" ")[0]
+        if invoked_with in lobby.plugin_commands:
+            cmd = lobby.plugin_commands[invoked_with]
+
+            # This is a dirty hack to give the cmd access to the lobby
+            cmd.cog = lobby
+
+            # All commands take a second 'context' arg including the message
+            ctx.args.append(ctx)
+
+            try:
+                await cmd.reinvoke(ctx)
+            except Exception as err:
+                await self.bot.on_command_error(ctx, err)
 
     # -------- Tasks --------
 

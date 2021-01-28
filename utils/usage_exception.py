@@ -27,6 +27,13 @@ class UsageException(Exception):
         )
 
     @staticmethod
+    def no_overflow(channel: TextChannel):
+        return UsageException(
+            channel,
+            "This lobby is full. Unlimit alternates with @Overflow(true)",
+        )
+
+    @staticmethod
     def game_is_full(channel: TextChannel):
         return UsageException(
             channel,
@@ -108,4 +115,14 @@ class UsageException(Exception):
             channel,
             f"Unexpected option provided: {actual}"
             f"\nExpected one of [{expected}]",
+        )
+
+    @staticmethod
+    def argument_quote_issue(channel: TextChannel):
+        return UsageException(
+            channel,
+            "There was an issue parsing your command because of quotes."
+            " Try switching between double quotes and single quotes."
+            " Try the command without quotes. "
+            " Make sure your quotes are closed or escaped.",
         )

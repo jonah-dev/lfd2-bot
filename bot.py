@@ -14,6 +14,9 @@ of Discord's developer studio.
 import os
 from datetime import datetime
 
+from discord.ext.commands.errors import UnexpectedQuoteError
+from utils.usage_exception import UsageException
+
 from discord.ext.commands.context import Context
 from discord.ext import commands
 from discord import Intents
@@ -22,6 +25,7 @@ from utils.handle import handle
 
 intents = Intents.default()
 intents.members = True
+
 
 class LFD2Bot(commands.Bot):
     """
@@ -43,15 +47,15 @@ class LFD2Bot(commands.Bot):
             fetch_offline_members=True,
             intents=intents,
         )
-    
+
     async def on_message(self, message):
         if message.author.bot:
             return
 
         ctx = await self.get_context(message)
         if ctx.command is None:
-            return # Ignore unknown messages
-        
+            return  # Ignore unknown messages
+
         await self.invoke(ctx)
 
     async def on_command_error(self, context: Context, exception):

@@ -3,6 +3,7 @@ from traceback import TracebackException
 from typing import Optional
 
 from discord.ext.commands.context import Context
+from discord.ext.commands.errors import UnexpectedQuoteError
 
 from utils.usage_exception import UsageException
 
@@ -17,6 +18,10 @@ async def handle(context: Optional[Context], exception: BaseException):
 
     if isinstance(exception.__cause__, UsageException):
         await exception.__cause__.notice()
+        return
+
+    if isinstance(exception, UnexpectedQuoteError):
+        await UsageException.argument_quote_issue(context.channel).notice()
         return
 
     if exception.__cause__ is not None:

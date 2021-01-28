@@ -1,45 +1,36 @@
-from typing import Callable, List, Dict
+from typing import List, Dict
 from discord.channel import TextChannel
 from numpy import matrix
 from sklearn.linear_model import LinearRegression
 from statistics import stdev, mean
 
-from matchmaking.match_finder import Match
-from matchmaking.game_data import GameData
+from utils.verses import Match
+
+from .game_data import GameData
 
 
 GAME_WEIGHT_HALFLIFE_DAYS: int = 60
 AVERAGE_SCORE: int = 2000
 
 
-def get_ranker(channel: TextChannel) -> Callable:
-    """
-    This function returns a 'ranker' function. It is meant to be used
-    by matchmaker, e.g. `get_next_match(..., get_ranker(...))`, and it
-    is only this complex so we can capture the channel in the closure.
-    """
+async def rank(matches: List[Match], id: str, channel: TextChannel):
+    scores = await get_player_ranks(id, channel)
 
-    async def ranker(matches: List[Match]):
-        scores = await get_scores(channel)
+    def mean_balance(match: Match) -> float:
+        (team_one, team_two) = match
+        avg_one = mean(
+            [scores.get(p.member.id, AVERAGE_SCORE) for p in team_one]
+        )
+        avg_two = mean(
+            [scores.get(p.member.id, AVERAGE_SCORE) for p in team_two]
+        )
+        return abs(avg_one - avg_two)
 
-        def mean_balance(match: Match) -> float:
-            (team_one, team_two) = match
-            avg_one = mean(
-                [scores.get(p.member.id, AVERAGE_SCORE) for p in team_one]
-            )
-            avg_two = mean(
-                [scores.get(p.member.id, AVERAGE_SCORE) for p in team_two]
-            )
-            return abs(avg_one - avg_two)
-
-        matches.sort(key=mean_balance)
-
-    return ranker
+    # matches.sort(key=mean_balance)
 
 
-# @ttl_cache(maxsize=128, ttl=600)  # 30 minutes
-async def get_scores(channel: TextChannel) -> Dict[int, float]:
-    data = await GameData.fetch(channel)
+async def get_player_ranks(id: str, channel: TextChannel) -> Dict[int, float]:
+    data = await GameData.fetch(id, channel)
     model = LinearRegression().fit(
         __get_training_data(data),
         __get_target_values(data),

@@ -9,7 +9,11 @@
       "type": "python",
       "request": "launch",
       "program": "bot.py",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      // "justMyCode": false,
+      "env": {
+        "DISCORD_TOKEN": "{Replace me}"
+      }
     },
     {
       "name": "Python: Attach using Process Id",

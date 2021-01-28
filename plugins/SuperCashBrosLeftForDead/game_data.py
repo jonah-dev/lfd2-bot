@@ -1,14 +1,10 @@
-import re
 import json
 from datetime import datetime
 from utils.handle import handle
 from utils.usage_exception import UsageException
 from discord.channel import TextChannel
 from gsheets import Sheets
-from cachetools.func import ttl_cache
 from typing import List, Set
-
-from utils.asyncify import asyncify
 
 
 class Team:
@@ -47,14 +43,8 @@ class GameData:
         self.games = games
 
     @staticmethod
-    # @ttl_cache(maxsize=128, ttl=1800)  # 30 minutes
-    async def fetch(channel: TextChannel):
-        try:
-            url = GameData.__get_url(channel)
-        except BaseException as exception:
-            await handle(None, exception)
-            raise UsageException.directive_missing(channel, "games")
-
+    async def fetch(id: str, channel: TextChannel):
+        url = f"https://docs.google.com/spreadsheets/d/{id}"
         try:
             sheets_fetcher = Sheets.from_files(
                 "client_secrets.json",
@@ -80,14 +70,6 @@ class GameData:
         except BaseException as exception:
             await handle(None, exception)
             raise UsageException.game_sheet_not_loaded(channel, url)
-
-    @staticmethod
-    def __get_url(channel: TextChannel) -> str:
-        if channel.topic is None:
-            raise UsageException.directive_missing(channel, "games")
-
-        id = re.findall(r"^@games\(([^\s]+)\)", channel.topic, re.M)
-        return f"https://docs.google.com/spreadsheets/d/{id[0]}"
 
     def get_all_players(self) -> Set[int]:
         players: Set[int] = set()
