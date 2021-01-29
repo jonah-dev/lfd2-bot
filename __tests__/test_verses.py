@@ -6,9 +6,9 @@ from utils.verses import Match, Verses
 from string import ascii_letters
 
 
-def get_matches(players, teams) -> List[Match]:
+def get_matches(players, teams, even=True) -> List[Match]:
     matches = set([])
-    Verses(None, [], players, teams, matches)
+    Verses(None, [], players, teams, matches, even)
     return list(matches)
 
 
@@ -53,10 +53,19 @@ class TestVerses(AsyncTestCase):
         matches = get_matches(players, [1, 2])
         assert len(matches) == 30
 
-    async def test_not_enough_players(self):
+    async def test_not_enough_players_eager(self):
         id = iter([a for a in ascii_letters])
         players = [next(id) for _ in range(2)]
-        matches = get_matches(players, [1, 2])
+        matches = get_matches(players, [2, 2, 2], False)
+        assert len(matches) == 1
+        assert len(teams := matches.pop()) == 1
+        assert len(teams := list(teams)) == 1
+        assert len(teams[0]) == 2
+
+    async def test_not_enough_players_even(self):
+        id = iter([a for a in ascii_letters])
+        players = [next(id) for _ in range(2)]
+        matches = get_matches(players, [2, 2, 2], True)
         assert len(matches) == 1
         assert len(teams := matches.pop()) == 2
         assert len(teams := list(teams)) == 2
