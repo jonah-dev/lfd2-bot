@@ -1,3 +1,4 @@
+from functools import reduce
 from itertools import combinations
 from typing import FrozenSet, Optional, List, Set, Tuple, TypeVar
 
@@ -14,6 +15,32 @@ def _pop(items: List[T]) -> Tuple[Optional[T], List[T]]:
         return (None, [])
 
     return (items[0], items[1:])
+
+
+def _distribute_team_size(num_players: int, teams: List[int]) -> List[int]:
+    """
+    If you do not use this feature, Veses will eagerly fulfill
+    team sizes, e.g. two players will be on the same team in a
+    [2, 2] matchup. This function modifies the team sizes to account
+    for the lack of players. In our previous example, we'd change
+    the team size to [1, 1] because there's only two players.
+    """
+    num_needed_players = reduce(lambda a, s: a + s, teams, 0)
+    if num_players >= num_needed_players:
+        return teams
+
+    num_teams = len(teams)
+    new_teams = [0 for _ in range(num_teams)]
+
+    index = 0
+    while num_players > 0:
+        if new_teams[index] < teams[index]:
+            new_teams[index] = new_teams[index] + 1
+            num_players = num_players - 1
+
+        index = (index + 1) % num_teams
+
+    return new_teams
 
 
 class Verses:
@@ -42,7 +69,11 @@ class Verses:
         pool: List[Player],
         team_sizes: List[int],
         matches_ref: Set[Match],
+        distribute_evenly: bool = True,
     ):
+        if not prev_team and distribute_evenly:  # first call only
+            team_sizes = _distribute_team_size(len(pool), team_sizes)
+
         self.parent = prev_team
         self.players = new_team
         if not team_sizes:

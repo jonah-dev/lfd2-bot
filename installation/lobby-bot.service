@@ -1,0 +1,16 @@
+[Unit]
+Description=Python3 Lobby Discord Bot
+
+[Service]
+PIDFile=/tmp/lobby-bot-99.pid
+User=<unixname>
+Group=<unixgroup>
+Restart=always
+KillSignal=SIGQUIT
+Environment=DISCORD_TOKEN="<secret token>"
+Environment=DISCORD_ADMINS="<discord ID #1> <discord ID #2> ..."
+WorkingDirectory=/path/to/project
+ExecStart=/path/to/project/env/bin/python /path/to/project/bot.py
+
+[Install]
+WantedBy=multi-user.target
