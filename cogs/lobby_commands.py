@@ -121,7 +121,7 @@ class LobbyCommands(Cog):
             return
 
         ctx = await self.bot.get_context(message)
-        if ctx.bot:
+        if ctx.message.author.bot:
             return
 
         lobby = self.get_lobby(ctx)
