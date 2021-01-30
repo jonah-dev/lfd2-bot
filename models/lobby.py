@@ -76,6 +76,7 @@ class Lobby:
             # can't add them back until the lobby resets.
             self.leavers.append(player)
 
+        await self.unready(user)
         self.players.remove(player)
 
         await self.show(title=f"{player.get_name()} has Left")
@@ -119,8 +120,10 @@ class Lobby:
             raise UsageException.join_the_lobby_first(self.channel)
 
         ind = self.players.index(player)
-        self.players[ind].set_unready()
-        self.clear_cache()
+        player = self.players[ind]
+        if player.is_ready():
+            player.set_unready()
+            self.clear_cache()
 
         await self.show(title=f"{player.get_name()} is not Ready")
 

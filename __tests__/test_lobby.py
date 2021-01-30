@@ -367,3 +367,33 @@ class TestLobby(AsyncTestCase):
         lobby = Lobby(bot(), ctx)
         embed = lobby.get_config_message()
         assert len(embed.fields) == 1
+
+    async def test_cache(self):
+        topic = """
+            @teams([2, 2])
+        """
+        lobby = Lobby(bot(), channel(topic=topic))
+        for _ in range(8):
+            await lobby.ready(member())
+
+        assert not lobby._cache
+
+        await lobby.show_next_shuffle()
+        shuffles_cache = lobby._cache["shuffles"]
+        assert shuffles_cache
+
+        await lobby.add(p_joined := member())
+        assert lobby._cache["shuffles"] == shuffles_cache
+
+        await lobby.ready(p_ready := member())
+        assert not lobby._cache
+
+        await lobby.show_next_shuffle()
+        assert lobby._cache["shuffles"]
+        assert lobby._cache["shuffles"] != shuffles_cache
+
+        await lobby.remove(p_joined)
+        assert lobby._cache
+
+        await lobby.remove(p_ready)
+        assert not lobby._cache
