@@ -2,17 +2,17 @@ import asyncio
 from aiounittest import AsyncTestCase
 from unittest.mock import AsyncMock, patch
 from datetime import datetime
-from string import digits
-from random import choice, randint
+from random import randint, shuffle
+from statistics import mean
 
 from discord.channel import TextChannel
 from discord.ext.commands.bot import Bot
-from discord.file import File
 from discord.member import Member
 
 from models.lobby import Lobby
+from plugins.SuperCashBrosLeftForDead.ranker import get_player_ranks
 from plugins.SuperCashBrosLeftForDead.game_data import GameData, Game, Team
-from plugins.SuperCashBrosLeftForDead.SuperCashBrosLeftForDead import ranked
+from plugins.SuperCashBrosLeftForDead.plugin import ranked, rank
 
 
 def channel(topic: str = "") -> TextChannel:
@@ -37,43 +37,57 @@ def member(id: int) -> Member:
     return member
 
 
-def id() -> str:
-    return int("".join(choice(digits) for _ in range(10)))
+ids = [id for id in range(8)]
+data = []
+for _ in range(5):
+    shuffle(ids)
+    data.append(
+        Game(
+            datetime.today(),
+            Team(ids[4:], randint(1000, 3000)),
+            Team(ids[:4], randint(1000, 3000)),
+        )
+    )
+data = GameData(data)
 
 
 async def game_data(_id, _channel) -> GameData:
-    return GameData(
-        [
-            Game(
-                datetime.today(),
-                Team([id() for _ in range(4)], randint(1000, 3000)),
-                Team([id() for _ in range(4)], randint(1000, 3000)),
-            )
-            for _ in range(5)
-        ]
-    )
-
-
-# async def draw_player(
-#     draw: ImageDraw.Draw,
-#     composite: Image,
-#     player: Player,
-#     character: Image,
-#     y_offset: int,
-# ) -> None:
+    return data
 
 
 @patch("plugins.SuperCashBrosLeftForDead.game_data.GameData.fetch", game_data)
-@patch("plugins.SuperCashBrosLeftForDead.composite.draw_composite")
+@patch("plugins.SuperCashBrosLeftForDead.plugin.draw_composite")
 class TestSuperCashBrosLeftForDead(AsyncTestCase):
-    async def test_ranked(self, draw_composite):
+    async def test_ranked_composite(self, draw_composite):
         topic = "@SuperCashBrosLeftForDead(history: 'patched')"
         lobby = Lobby(bot(), ctx := channel(topic=topic))
         for id in range(8):
             await lobby.ready(member(id + 1))
 
         f = asyncio.Future()
-        f.set_result(AsyncMock(spec=File))
+        f.set_result("assets/coach_small.png")
         draw_composite.return_value = f
+
         await ranked(lobby, ctx)
-        pass
+        assert draw_composite.await_count == 1
+
+    async def test_ranking_order(self, draw_composite):
+        topic = "@SuperCashBrosLeftForDead(history: 'patched')"
+        lobby = Lobby(bot(), ctx := channel(topic=topic))
+        for id in range(8):
+            await lobby.ready(member(id))
+
+        data = await game_data("patched", ctx)
+        ranks = get_player_ranks(data)
+
+        matches = lobby.get_matches()
+        await rank(matches, "patched", ctx)
+
+        last_diff = -1
+        for m in matches:
+            m = list(m)
+            mean_1 = mean([ranks[p.member.id] for p in list(m[0])])
+            mean_2 = mean([ranks[p.member.id] for p in list(m[1])])
+            next_diff = abs(mean_1 - mean_2)
+            assert next_diff >= last_diff
+            last_diff = next_diff

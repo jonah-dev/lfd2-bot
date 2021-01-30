@@ -12,7 +12,7 @@ class Config:
     def __init__(
         self, channel: TextChannel, bot: Bot, installCommand: Callable
     ):
-        import plugins.SuperCashBrosLeftForDead.SuperCashBrosLeftForDead  # noqa F401
+        import plugins.SuperCashBrosLeftForDead.plugin  # noqa F401
 
         self.bot = bot
         self.installCommand = installCommand

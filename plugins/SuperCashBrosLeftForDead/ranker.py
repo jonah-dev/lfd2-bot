@@ -14,7 +14,8 @@ AVERAGE_SCORE: int = 2000
 
 
 async def rank(matches: List[Match], id: str, channel: TextChannel):
-    scores = await get_player_ranks(id, channel)
+    data = await GameData.fetch(id, channel)
+    scores = get_player_ranks(data)
 
     def mean_balance(match: Match) -> float:
         (team_one, team_two) = match
@@ -26,11 +27,10 @@ async def rank(matches: List[Match], id: str, channel: TextChannel):
         )
         return abs(avg_one - avg_two)
 
-    # matches.sort(key=mean_balance)
+    matches.sort(key=mean_balance)
 
 
-async def get_player_ranks(id: str, channel: TextChannel) -> Dict[int, float]:
-    data = await GameData.fetch(id, channel)
+def get_player_ranks(data: GameData) -> Dict[int, float]:
     model = LinearRegression().fit(
         __get_training_data(data),
         __get_target_values(data),
