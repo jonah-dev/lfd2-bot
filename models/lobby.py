@@ -270,7 +270,7 @@ class Lobby:
 
     def is_ready(self) -> bool:
         if self.c.vMin is None:
-            return False
+            return True
 
         return self.ready_count() >= self.c.vMin
 
