@@ -64,7 +64,7 @@ class Lobby:
 
         self.players.append(player)
 
-        await self.show(title=f"{player.get_name()} has Joined!")
+        await self.show(subtitle=f"{player.get_name()} has Joined!")
 
     async def remove(self, user: Member, author: Optional[Member] = None):
         player = Player(user)
@@ -79,15 +79,21 @@ class Lobby:
         await self.unready(user)
         self.players.remove(player)
 
-        await self.show(title=f"{player.get_name()} has Left")
+        await self.show(subtitle=f"{player.get_name()} has Left")
 
     async def show(
         self,
+        *,
         mention: bool = False,
         title: Optional[str] = None,
+        subtitle: Optional[str] = None,
         temp: bool = True,
     ) -> None:
-        embed = self.get_lobby_message(title=title, mention=mention)
+        embed = self.get_lobby_message(
+            mention=mention,
+            title=title,
+            subtitle=subtitle,
+        )
         await self.__replaceMessage("lobby", embed, temp)
 
     async def ready(self, user: Member) -> None:
@@ -109,10 +115,10 @@ class Lobby:
             await self.broadcast_game_almost_full()
 
         if self.is_ready():
-            title = f"Game Starting in {self.c.vName}"
+            title = f"Game Starting in {self.c.vName} Lobby"
             await self.show(title=title, mention=True)
         else:
-            await self.show(title=f"{player.get_name()} is Ready!")
+            await self.show(subtitle=f"{player.get_name()} is Ready!")
 
     async def unready(self, user: Member) -> None:
         player = Player(user)
@@ -125,7 +131,7 @@ class Lobby:
             player.set_unready()
             self.clear_cache()
 
-        await self.show(title=f"{player.get_name()} is not Ready")
+        await self.show(subtitle=f"{player.get_name()} is not Ready")
 
     def get_players(self) -> Tuple[List[Player], List[Player]]:
         ready = []
@@ -193,10 +199,15 @@ class Lobby:
         self,
         mention: bool = False,
         title: Optional[str] = None,
+        subtitle: Optional[str] = None,
     ) -> Embed:
         color = Colour.green() if self.is_ready() else Colour.orange()
         embed = Embed(colour=color)
-        embed.title = title or f"Lobby ({len(self.players)})"
+        if title:
+            embed.title = title
+        else:
+            subtitle = subtitle or f"({len(self.players)})"
+            embed.title = f"{self.c.vName} Lobby: {subtitle}"
 
         ready, alternates = self.get_players()
 

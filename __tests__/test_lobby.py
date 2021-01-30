@@ -134,16 +134,19 @@ class TestLobby(AsyncTestCase):
         assert lobby.ready_count() == 1
 
     async def test_lobby_embed(self):
-        topic = "@players(min: 8)"
+        topic = """
+            @name(foo)
+            @players(min: 8)
+        """
         lobby = Lobby(bot(), channel(topic=topic))
         embed = lobby.get_lobby_message()
-        assert embed.title == "Lobby (0)"
+        assert embed.title == "foo Lobby: (0)"
         assert embed.footer.text == "More players can join."
         assert embed.colour == Colour.orange()
 
         await lobby.add(player := member())
         embed = lobby.get_lobby_message()
-        assert embed.title == "Lobby (1)"
+        assert embed.title == "foo Lobby: (1)"
         assert embed.footer.text == "More players can join."
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 1
@@ -156,7 +159,7 @@ class TestLobby(AsyncTestCase):
 
         await lobby.ready(player)
         embed = lobby.get_lobby_message()
-        assert embed.title == "Lobby (1)"
+        assert embed.title == "foo Lobby: (1)"
         assert embed.footer.text == "More players can join."
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 1
@@ -170,7 +173,7 @@ class TestLobby(AsyncTestCase):
         for _ in range(7):
             await lobby.ready(member())
         embed = lobby.get_lobby_message()
-        assert embed.title == "Lobby (8)"
+        assert embed.title == "foo Lobby: (8)"
         assert embed.footer.text == "Game ready. More players can join."
         assert embed.colour == Colour.green()
         assert len(embed.fields) == 1
@@ -179,7 +182,7 @@ class TestLobby(AsyncTestCase):
 
         await lobby.unready(player)
         embed = lobby.get_lobby_message()
-        assert embed.title == "Lobby (8)"
+        assert embed.title == "foo Lobby: (8)"
         assert embed.footer.text == "More players can join."
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 2
@@ -190,7 +193,7 @@ class TestLobby(AsyncTestCase):
 
         await lobby.remove(player)
         embed = lobby.get_lobby_message()
-        assert embed.title == "Lobby (7)"
+        assert embed.title == "foo Lobby: (7)"
         assert embed.footer.text == "More players can join."
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 1
@@ -200,7 +203,7 @@ class TestLobby(AsyncTestCase):
         for _ in range(100):
             await lobby.add(member())
         embed = lobby.get_lobby_message()
-        assert embed.title == "Lobby (107)"
+        assert embed.title == "foo Lobby: (107)"
         assert embed.footer.text == "More players can join."
         assert embed.colour == Colour.orange()
         assert len(embed.fields) == 2
@@ -209,7 +212,7 @@ class TestLobby(AsyncTestCase):
 
         await lobby.ready(member())
         embed = lobby.get_lobby_message()
-        assert embed.title == "Lobby (108)"
+        assert embed.title == "foo Lobby: (108)"
         assert embed.footer.text == "Game ready. More players can join."
         assert embed.colour == Colour.green()
         assert len(embed.fields) == 2
@@ -240,7 +243,8 @@ class TestLobby(AsyncTestCase):
             await lobby.ready(member())
         lobby.get_lobby_message.assert_called_with(
             mention=True,
-            title=f"Game Starting in #{ctx.name}",
+            title=f"Game Starting in #{ctx.name} Lobby",
+            subtitle=None,
         )
 
     async def test_get_matches(self):
