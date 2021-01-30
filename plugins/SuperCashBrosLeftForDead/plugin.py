@@ -6,6 +6,7 @@ from models.lobby import Lobby
 from models.player import Player
 from .ranker import get_player_ranks, rank
 from .composite import draw_composite
+from .game_data import GameData
 from utils.directive import directive, parse_multi
 from utils.usage_exception import UsageException
 
@@ -65,7 +66,8 @@ async def leaderboard(lobby, ctx: Context, option: str = None):
     """See player ranks"""
     filter_lobby = option == "lobby"
     id = lobby.c.pLeft4Dead["history"]
-    scores = await get_player_ranks(id, lobby.channel)
+    data = await GameData.fetch(id, lobby.channel)
+    scores = get_player_ranks(data)
     scores = scores.items()
     scores = sorted(scores, key=lambda item: item[1], reverse=True)
     embed = Embed(colour=Colour.blurple())
