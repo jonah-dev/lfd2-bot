@@ -261,8 +261,9 @@ class Lobby:
         return self.ready_count() >= self.c.vMin
 
     def get_matches(self) -> List:
+        players, _alternates = self.get_players()
         matches = set()
-        Verses(None, tuple(), self.players, self.c.vTeams, matches)
+        Verses(None, tuple(), players, self.c.vTeams, matches)
         return list(matches)
 
     def clear_cache(self) -> None:
