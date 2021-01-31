@@ -1,4 +1,5 @@
 import random
+import pytz
 from datetime import datetime
 
 from discord.ext.commands import command, Cog, Bot, Context
@@ -51,3 +52,10 @@ class MiscCommands(Cog):
     @command(hidden=True)
     async def ped(self, ctx: Context):
         await ctx.send(f"Current lag for {ctx.author.display_name} is: {0}ms")
+
+    @command(hidden=True)
+    async def time(self, ctx: Context):
+        """Displays the official discord time"""
+        tz = pytz.timezone('US/Pacific')
+        msg = "The official discord time is: " + datetime.now(tz).strftime("%I:%M %p")
+        await ctx.send(msg)
