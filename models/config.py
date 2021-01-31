@@ -23,6 +23,7 @@ class Config:
         self.vOverflow: bool = True
         self.vTeams: Optional[List[int]] = None
         self.vBroadcastChannels: List = list()
+        self.vLaunch: Optional[str] = None
 
         self.issues = {}
 

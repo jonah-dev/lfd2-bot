@@ -214,9 +214,8 @@ class Lobby:
         if ready:
             print = "get_mention" if mention else "get_name"
             value = "".join([f"• {(getattr(p, print))()}\n" for p in ready])
-            if self.is_ready():
-                url = "http://lfd2.zambonihunters.com"
-                value = f"{value}[Click here to launch the game]({url})\n"
+            if self.is_ready() and self.c.vLaunch:
+                value = f"{value}[Click here to launch the game]({self.c.vLaunch})\n"
             embed.add_field(
                 name=f"Players ({len(ready)})",
                 value=value,

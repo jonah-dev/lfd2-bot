@@ -17,6 +17,7 @@ def SuperCashBrosLeftForDead(config, props: str):
     config.vMin = 8
     config.vOverflow = True
     config.vTeams = [4, 4]
+    config.vLaunch = "http://lfd2.zambonihunters.com"
 
     config.pLeft4Dead = {}
 

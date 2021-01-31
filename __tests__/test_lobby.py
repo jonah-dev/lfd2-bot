@@ -178,7 +178,7 @@ class TestLobby(AsyncTestCase):
         assert embed.colour == Colour.green()
         assert len(embed.fields) == 1
         assert embed.fields[0].name == "Players (8)"
-        assert embed.fields[0].value.count("\n") == 9  # +Launch URL
+        assert embed.fields[0].value.count("\n") == 8
 
         await lobby.unready(player)
         embed = lobby.get_lobby_message()
@@ -217,9 +217,13 @@ class TestLobby(AsyncTestCase):
         assert embed.colour == Colour.green()
         assert len(embed.fields) == 2
         assert embed.fields[0].name == "Players (8)"
-        assert embed.fields[0].value.count("\n") == 9  # +Launch URL
+        assert embed.fields[0].value.count("\n") == 8
         assert embed.fields[1].name == "Alternates (100)"
         assert embed.fields[1].value.count("\n") == 100
+
+        lobby.c.vLaunch = "foo.com"
+        embed = lobby.get_lobby_message()
+        assert embed.fields[0].value.count("\n") == 9
 
         lobby.c.vMax = 8
         embed = lobby.get_lobby_message()
