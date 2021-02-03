@@ -178,11 +178,14 @@ class Lobby:
         if title:
             embed.title = title
         else:
-            subtitle = subtitle or f"({len(self.players)})"
-            embed.title = f"{self.c.vName} Lobby: {subtitle}"
+            lobby_name = f"{self.c.vName} ({len(self.players)})"
+            if subtitle:
+                embed.set_author(name=lobby_name)
+                embed.title = subtitle
+            else:
+                embed.title = lobby_name
 
         ready, alternates = self.get_players()
-
         if ready:
             print = "get_mention" if mention else "get_name"
             value = "".join([f"• {(getattr(p, print))()}\n" for p in ready])
