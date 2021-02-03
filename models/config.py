@@ -4,7 +4,7 @@ import inspect
 
 from typing import Callable, List, Optional
 
-from discord.channel import TextChannel
+from discord import TextChannel, Embed, Colour
 from discord.ext.commands import Bot
 
 
@@ -128,3 +128,31 @@ class Config:
         records = self.issues.get(area, [])
         records.append(message)
         self.issues[area] = records
+
+    def describe(self) -> Embed:
+        embed = Embed(colour=Colour.from_rgb(255, 192, 203))
+        embed.title = "Lobby Config"
+
+        settings = (
+            f"@name(`{self.vName}`)\n"
+            f"@players(min: `{self.vMin}`, max: `{self.vMax}`)\n"
+            f"@teams(`{self.vTeams}`)\n"
+            f"@overflow(`{self.vOverflow}`)\n"
+            f"@broadcast(`{self.vBroadcastChannels}`)\n"
+        )
+        embed.add_field(name="Settings", value=settings, inline=False)
+
+        if self.issues:
+            issues = ""
+            for area in self.issues:
+                issues = issues + f"{area}\n"
+                for i in self.issues[area]:
+                    issues = issues + f"• *{i}*\n"
+            embed.add_field(name="Issues", value=issues, inline=False)
+
+        footer = (
+            "Use ?config @directive(...) or the channel's"
+            " topic to change settings."
+        )
+        embed.set_footer(text=footer)
+        return embed

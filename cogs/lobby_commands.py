@@ -4,6 +4,7 @@ import urllib.request
 from typing import Dict, Optional
 
 from discord import Embed, Colour, Member, Message
+from discord.embeds import EmptyEmbed
 from discord.ext import tasks
 from discord.ext.commands import command, Cog, Bot, Context
 
@@ -149,28 +150,15 @@ class LobbyCommands(Cog):
         now = datetime.datetime.now().time()
         reset_range_start = datetime.time(13)
         reset_range_end = datetime.time(13, 1)
-        if reset_range_start <= now <= reset_range_end:
-            daily_fact = self.get_todays_useless_fact()
-            for index in self.lobbies:
+        if True or reset_range_start <= now <= reset_range_end:
+            for index in list(self.lobbies.keys()):
                 if len(self.lobbies[index].players) == 0:
                     continue
 
                 channel = self.lobbies[index].channel
-                self.lobbies[index] = Lobby(self.bot, channel)
-                embed = Embed(colour=Colour.orange())
-                embed.set_author(
-                    name=f"Daily Update - {str(datetime.date.today())}"
-                )
-                embed.add_field(
-                    name="Lobby has been cleared!",
-                    value=daily_fact,
-                    inline=False,
-                )
+                del self.lobbies[index]
+                embed = Lobby(self.bot, channel).c.describe()
+                embed.color = Colour.orange()
+                embed.title = "Lobby has been Cleared"
+                embed.set_footer(text=EmptyEmbed)
                 await channel.send(embed=embed)
-
-    @staticmethod
-    def get_todays_useless_fact():
-        req = urllib.request.urlopen(
-            "https://uselessfacts.jsph.pl/today.json?language=en"
-        )
-        return json.loads(req.read())["text"]
