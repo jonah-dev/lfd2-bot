@@ -156,7 +156,7 @@ class LobbyCommands(Cog):
                     continue
 
                 channel = self.lobbies[index].channel
-                self.lobbies[index] = Lobby(self.bot, channel)
+                del self.lobbies[index]
                 embed = Embed(colour=Colour.orange())
                 embed.set_author(
                     name=f"Daily Update - {str(datetime.date.today())}"
