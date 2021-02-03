@@ -150,7 +150,7 @@ class LobbyCommands(Cog):
         now = datetime.datetime.now().time()
         reset_range_start = datetime.time(13)
         reset_range_end = datetime.time(13, 1)
-        if True or reset_range_start <= now <= reset_range_end:
+        if reset_range_start <= now <= reset_range_end:
             for index in list(self.lobbies.keys()):
                 if len(self.lobbies[index].players) == 0:
                     continue
