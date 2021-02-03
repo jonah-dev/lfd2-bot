@@ -341,27 +341,27 @@ class TestLobby(AsyncTestCase):
         assert embed.fields[1].value.count("\n") == 12
 
         lobby.c.install("@name('Game night!')")
-        embed = lobby.get_config_message()
+        embed = lobby.c.describe()
         assert embed.fields[1].name == "Issues"
         assert embed.fields[1].value.count("\n") == 10
 
         lobby.c.install("@teams([2, 2])")
-        embed = lobby.get_config_message()
+        embed = lobby.c.describe()
         assert embed.fields[1].name == "Issues"
         assert embed.fields[1].value.count("\n") == 8
 
         lobby.c.install("@overflow(False)")
-        embed = lobby.get_config_message()
+        embed = lobby.c.describe()
         assert embed.fields[1].name == "Issues"
         assert embed.fields[1].value.count("\n") == 6
 
         lobby.c.install("@broadcast([])")
-        embed = lobby.get_config_message()
+        embed = lobby.c.describe()
         assert embed.fields[1].name == "Issues"
         assert embed.fields[1].value.count("\n") == 4
 
         lobby.c.install("@players(min: 3)")
-        embed = lobby.get_config_message()
+        embed = lobby.c.describe()
         assert embed.fields[1].name == "Issues"
         assert embed.fields[1].value.count("\n") == 2
 
@@ -373,7 +373,7 @@ class TestLobby(AsyncTestCase):
             @overflow(False)
         """
         lobby = Lobby(bot(), ctx)
-        embed = lobby.get_config_message()
+        embed = lobby.c.describe()
         assert len(embed.fields) == 1
 
     async def test_cache(self):

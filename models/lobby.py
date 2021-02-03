@@ -164,36 +164,8 @@ class Lobby:
         await self.channel.send(embed=embed)
 
     async def show_config(self) -> None:
-        embed = embed = self.get_config_message()
+        embed = self.c.describe()
         await self.__replaceMessage("config", embed)
-
-    def get_config_message(self) -> Embed:
-        embed = Embed(colour=Colour.from_rgb(255, 192, 203))
-        embed.title = "Lobby Config"
-
-        settings = (
-            f"@name(`{self.c.vName}`)\n"
-            f"@players(min: `{self.c.vMin}`, max: `{self.c.vMax}`)\n"
-            f"@teams(`{self.c.vTeams}`)\n"
-            f"@overflow(`{self.c.vOverflow}`)\n"
-            f"@broadcast(`{self.c.vBroadcastChannels}`)\n"
-        )
-        embed.add_field(name="Settings", value=settings, inline=False)
-
-        if self.c.issues:
-            issues = ""
-            for area in self.c.issues:
-                issues = issues + f"{area}\n"
-                for i in self.c.issues[area]:
-                    issues = issues + f"• *{i}*\n"
-            embed.add_field(name="Issues", value=issues, inline=False)
-
-        footer = (
-            "Use ?config @directive(...) or the channel's"
-            " topic to change settings."
-        )
-        embed.set_footer(text=footer)
-        return embed
 
     def get_lobby_message(
         self,
