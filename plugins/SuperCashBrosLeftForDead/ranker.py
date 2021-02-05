@@ -8,7 +8,7 @@ from utils.verses import Match
 
 from .game_data import GameData
 
-
+GAME_DECAY: int = 0.5
 GAME_WEIGHT_HALFLIFE_DAYS: int = 60
 AVERAGE_SCORE: int = 2000
 
@@ -82,6 +82,6 @@ def __get_weights(data: GameData) -> matrix:
 def __get_decay_weights(data: GameData) -> matrix:
     newest = max([g.date for g in data.games])
     return [
-        0.5 ** ((newest - g.date).days / GAME_WEIGHT_HALFLIFE_DAYS)
+        GAME_DECAY ** ((newest - g.date).days / GAME_WEIGHT_HALFLIFE_DAYS)
         for g in data.games
     ]

@@ -82,7 +82,8 @@ async def leaderboard(lobby, ctx: Context, option: str = None):
         if filter_lobby and Player(user) not in lobby.players:
             continue
 
-        embed.add_field(name=f"{rank}. {user}", value=score, inline=False)
+        user_name = user.display_name
+        embed.add_field(name=f"{rank}. {user_name}", value=score, inline=False)
         rank += 1
 
     if len(embed.fields) == 0:

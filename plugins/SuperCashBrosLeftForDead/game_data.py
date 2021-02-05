@@ -1,10 +1,12 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from utils.handle import handle
 from utils.usage_exception import UsageException
 from discord.channel import TextChannel
 from gsheets import Sheets
 from typing import List, Set
+
+HISTORY_LIMIT_DAYS = 100000
 
 
 class Team:
@@ -54,11 +56,16 @@ class GameData:
             games: List[Game] = []
             # Must be the first sheet
             # Skip headers
+            n_days_ago = datetime.now() - timedelta(days=HISTORY_LIMIT_DAYS)
             for row in sheets._sheets[0]._values[1:]:
                 try:
+                    date = datetime.strptime(row[4], "%m/%d/%Y")
+                    if date < n_days_ago:
+                        continue
+
                     games.append(
                         Game(
-                            datetime.strptime(row[4], "%m/%d/%Y"),
+                            date,
                             Team(json.loads(row[0]), row[1]),
                             Team(json.loads(row[2]), row[3]),
                         )
