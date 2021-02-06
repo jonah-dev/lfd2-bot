@@ -14,9 +14,6 @@ of Discord's developer studio.
 import os
 from datetime import datetime
 
-from discord.ext.commands.errors import UnexpectedQuoteError
-from utils.usage_exception import UsageException
-
 from discord.ext.commands.context import Context
 from discord.ext import commands
 from discord import Intents

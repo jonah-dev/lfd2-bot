@@ -217,6 +217,17 @@ class Lobby:
 
         return embed
 
+    async def ping_alternates(self):
+        _, alternates = self.get_players()
+        embed = Embed(colour=Colour.red())
+        embed.title = "Looking for Players"
+        lobby_name = f"{self.c.vName} ({len(self.players)})"
+        embed.set_author(name=lobby_name)
+        value = "".join([f"• {p.get_mention()}\n" for p in alternates])
+        embed.add_field(name="Are you ready to play?", value=value)
+        embed.set_footer(text="Use `?ready` to ready-up!")
+        await self.channel.send(embed=embed)
+
     def has_joined(self, player: Player) -> bool:
         return player in self.players
 
