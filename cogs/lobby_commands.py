@@ -1,9 +1,7 @@
 import datetime
-import json
-import urllib.request
 from typing import Dict, Optional
 
-from discord import Embed, Colour, Member, Message
+from discord import Colour, Member, Message
 from discord.embeds import EmptyEmbed
 from discord.ext import tasks
 from discord.ext.commands import command, Cog, Bot, Context
@@ -88,6 +86,12 @@ class LobbyCommands(Cog):
         """See the current lobby"""
         lobby = self.get_lobby(ctx)
         await lobby.show(temp=False)
+
+    @command()
+    async def alternates(self, ctx: Context):
+        """Ping unready players"""
+        lobby = self.get_lobby(ctx)
+        await lobby.ping_alternates()
 
     @command()
     async def shuffle(self, ctx: Context):
