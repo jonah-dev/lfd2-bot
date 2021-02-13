@@ -58,7 +58,7 @@ class Config:
     def players(self, props: str):
         props = directives.parse_multi(props)
         if type(props) is not dict:
-            self.issue("You must provide a value. Ex: `{min: 8, max: 10`}")
+            self.issue("You must provide a value. Ex: `min: 8, max: 10`")
             return
 
         minimum = props.get("min")
@@ -119,6 +119,27 @@ class Config:
                 else:
                     self.vBroadcastChannels.append(channel)
 
+    @directive
+    def game(self, props: str):
+        props = directives.parse_multi(props)
+        if type(props) is not dict:
+            self.issue("You must provide a value. Ex: `{steam: 555}`")
+            return
+
+        if len(props) != 1:
+            self.issue(
+                "You must provide exactly one value. Ex: `{steam: 555}`"
+            )
+            return
+
+        steamID = props.get("steam")
+        if steamID is not None and type(steamID) is not int:
+            self.issue("The value of `min` must be a number. Ex: `min: 8`")
+            return
+        elif steamID is not None:
+            self.asSteamGame(steamID)
+            return
+
     # -- Helpers --------------------------------------------------------------
 
     def issue(self, message: str, *, skip_frames: int = 1, area: str = None):
@@ -156,3 +177,14 @@ class Config:
         )
         embed.set_footer(text=footer)
         return embed
+
+    def asSteamGame(self, steamID):
+        fn = f"steam{steamID}"
+        module = __import__("data.games", globals(), locals(), [fn])
+        fn = getattr(module, fn, None)
+        if fn is None:
+            self.issue("This is not a known steam app ID.")
+            return
+        fn(self)
+        self.vLaunch = f"steam://run/{steamID}"
+        del module

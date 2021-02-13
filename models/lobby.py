@@ -190,7 +190,7 @@ class Lobby:
             print = "get_mention" if mention else "get_name"
             value = "".join([f"• {(getattr(p, print))()}\n" for p in ready])
             if self.is_ready() and self.c.vLaunch:
-                value = f"{value}[Click here to launch the game]({self.c.vLaunch})\n"
+                value = f"{value}Launch: {self.c.vLaunch}\n"
             embed.add_field(
                 name=f"Players ({len(ready)})",
                 value=value,
