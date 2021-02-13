@@ -24,6 +24,7 @@ class Config:
         self.vTeams: Optional[List[int]] = None
         self.vBroadcastChannels: List = list()
         self.vLaunch: Optional[str] = None
+        self.vIcon: Optional[str] = None
 
         self.issues = {}
 
@@ -187,4 +188,5 @@ class Config:
             return
         fn(self)
         self.vLaunch = f"steam://run/{steamID}"
+        self.vIcon = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{steamID}/capsule_184x69.jpg"
         del module

@@ -64,7 +64,7 @@ class Lobby:
 
         self.players.append(player)
 
-        await self.show(subtitle=f"{player.get_name()} has Joined!")
+        await self.show(desc=f"{player.get_name()} has Joined!")
 
     async def remove(self, user: Member, author: Optional[Member] = None):
         player = Player(user)
@@ -79,20 +79,18 @@ class Lobby:
         await self.unready(user)
         self.players.remove(player)
 
-        await self.show(subtitle=f"{player.get_name()} has Left")
+        await self.show(desc=f"{player.get_name()} has Left")
 
     async def show(
         self,
         *,
         mention: bool = False,
-        title: Optional[str] = None,
-        subtitle: Optional[str] = None,
+        desc: Optional[str] = None,
         temp: bool = True,
     ) -> None:
         embed = self.get_lobby_message(
             mention=mention,
-            title=title,
-            subtitle=subtitle,
+            desc=desc,
         )
         await self.__replaceMessage("lobby", embed, temp)
 
@@ -107,6 +105,8 @@ class Lobby:
         if self.is_full():
             raise UsageException.game_is_full(self.channel)
 
+        was_ready = self.is_ready()
+
         ind = self.players.index(player)
         self.players[ind].set_ready()
         self.clear_cache()
@@ -114,11 +114,10 @@ class Lobby:
         if self.c.vMax is not None and self.ready_count() == self.c.vMax - 1:
             await self.broadcast_game_almost_full()
 
-        if self.is_ready():
-            title = f"Game Starting in {self.c.vName} Lobby"
-            await self.show(title=title, mention=True)
+        if not was_ready and self.is_ready():
+            await self.show(mention=True, desc="The lobby is now ready!")
         else:
-            await self.show(subtitle=f"{player.get_name()} is Ready!")
+            await self.show(desc=f"{player.get_name()} is Ready!")
 
     async def unready(self, user: Member) -> None:
         player = Player(user)
@@ -131,7 +130,7 @@ class Lobby:
             player.set_unready()
             self.clear_cache()
 
-        await self.show(subtitle=f"{player.get_name()} is not Ready")
+        await self.show(desc=f"{player.get_name()} is not Ready")
 
     def get_players(self) -> Tuple[List[Player], List[Player]]:
         ready = []
@@ -169,21 +168,14 @@ class Lobby:
 
     def get_lobby_message(
         self,
+        *,
         mention: bool = False,
-        title: Optional[str] = None,
-        subtitle: Optional[str] = None,
+        desc: Optional[str] = None,
     ) -> Embed:
         color = Colour.green() if self.is_ready() else Colour.orange()
         embed = Embed(colour=color)
-        if title:
-            embed.title = title
-        else:
-            lobby_name = f"{self.c.vName} ({len(self.players)})"
-            if subtitle:
-                embed.set_author(name=lobby_name)
-                embed.title = subtitle
-            else:
-                embed.title = lobby_name
+        embed.set_author(name=self.c.vName, icon_url=self.c.vIcon)
+        embed.description = desc
 
         ready, alternates = self.get_players()
         if ready:
@@ -280,8 +272,8 @@ class Lobby:
                 pass
 
         broadcasts = []
-        title = f"Game Almost Full in {self.c.vName} Lobby!"
-        message = self.get_lobby_message(False, title)
+        desc = f"Game Almost Full in {self.c.vName} Lobby!"
+        message = self.get_lobby_message(desc=desc)
         for dest in destinations:
             broadcasts.append(trySend(dest, message))
 
