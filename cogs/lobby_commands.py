@@ -58,6 +58,12 @@ class LobbyCommands(Cog):
         await lobby.remove(ctx.author)
 
     @command()
+    async def rage(self, ctx: Context):
+        """Leave the lobby ANGRILY"""
+        lobby = self.get_lobby(ctx)
+        await lobby.remove(ctx.author,rage=True)
+
+    @command()
     async def remove(self, ctx: Context, member: Member):
         """Remove other users from the lobby"""
         lobby = self.get_lobby(ctx)
