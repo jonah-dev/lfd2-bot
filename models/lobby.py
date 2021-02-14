@@ -66,7 +66,7 @@ class Lobby:
 
         await self.show(subtitle=f"{player.get_name()} has Joined!")
 
-    async def remove(self, user: Member, author: Optional[Member] = None):
+    async def remove(self, user: Member, author: Optional[Member] = None, rage=False):
         player = Player(user)
         if player not in self.players:
             raise UsageException.not_in_lobby(self.channel, player)
@@ -79,7 +79,10 @@ class Lobby:
         await self.unready(user)
         self.players.remove(player)
 
-        await self.show(subtitle=f"{player.get_name()} has Left")
+        if not rage:
+            await self.show(subtitle=f"{player.get_name()} has Left")
+        else:
+            await self.show(subtitle=f"{player.get_name()} says see ya jerks")
 
     async def show(
         self,
