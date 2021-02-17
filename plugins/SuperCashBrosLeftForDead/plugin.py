@@ -13,11 +13,7 @@ from utils.usage_exception import UsageException
 
 @directive
 def SuperCashBrosLeftForDead(config, props: str):
-    config.vMax = 8
-    config.vMin = 8
-    config.vOverflow = True
-    config.vTeams = [4, 4]
-    config.vLaunch = "http://lfd2.zambonihunters.com"
+    config.asSteamGame(550)
 
     config.pLeft4Dead = {}
 
