@@ -1,3 +1,4 @@
+from utils.get_steam_icon import get_steam_icon
 from utils.directive import directive
 import utils.directive as directives
 import inspect
@@ -188,5 +189,5 @@ class Config:
             return
         fn(self)
         self.vLaunch = f"steam://run/{steamID}"
-        self.vIcon = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{steamID}/capsule_184x69.jpg"
+        self.vIcon = get_steam_icon(steamID)
         del module
