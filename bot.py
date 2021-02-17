@@ -52,9 +52,8 @@ class LFD2Bot(commands.Bot):
         ctx = await self.get_context(message)
         if ctx.command is None:
             return  # Ignore unknown messages
-
-        async with ctx.typing():
-            await self.invoke(ctx)
+        await ctx.trigger_typing()
+        await self.invoke(ctx)
 
     async def on_command_error(self, context: Context, exception):
         await handle(context, exception)

@@ -177,7 +177,7 @@ class Lobby:
     ) -> Embed:
         color = Colour.green() if self.is_ready() else Colour.orange()
         embed = Embed(colour=color)
-        embed.set_author(name=self.c.vName, icon_url=self.c.vIcon)
+        embed.set_author(name=self.c.vName, icon_url=self.c.vIcon or "")
         embed.description = desc
 
         ready, alternates = self.get_players()
