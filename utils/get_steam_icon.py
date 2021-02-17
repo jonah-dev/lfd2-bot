@@ -1,15 +1,22 @@
+import os
 from requests import get
 
-from bs4 import BeautifulSoup
-
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
+URL = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1"
+ASSET = "https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps"
 
 
 def get_steam_icon(steamID: int):
     try:
-        url = f"https://steamdb.info/app/{steamID}"
-        page = get(url, headers={"User-Agent": USER_AGENT})
-        soup = BeautifulSoup(page.content, "html.parser")
-        return soup.select("img.app-icon.avatar")[0].get("src")
+        params = {
+            "key": os.environ["STEAM_KEY"],
+            "include_played_free_games": 1,
+            "steamid": os.environ["STEAM_PROFILE"],
+            "include_appinfo": 1,
+            "format": "json",
+            "appids_filter[0]": steamID,
+        }
+        game = get(URL, params=params).json()
+        hash = game["response"]["games"][0]["img_icon_url"]
+        return f"{ASSET}/{steamID}/{hash}.jpg"
     except Exception:
         return None
