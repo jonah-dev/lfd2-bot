@@ -3,6 +3,7 @@ from discord.ext.commands.context import Context
 from discord.ext.commands.core import command
 
 from models.lobby import Lobby
+from models.config import Config
 from models.player import Player
 from .ranker import get_player_ranks, rank
 from .composite import draw_composite
@@ -12,8 +13,9 @@ from utils.usage_exception import UsageException
 
 
 @directive
-def SuperCashBrosLeftForDead(config, props: str):
+def SuperCashBrosLeftForDead(config: Config, props: str):
     config.asSteamGame(550)
+    config.vMin = 8
 
     config.pLeft4Dead = {}
 
