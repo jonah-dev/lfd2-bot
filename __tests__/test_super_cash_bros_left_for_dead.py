@@ -1,7 +1,7 @@
 import asyncio
 from aiounittest import AsyncTestCase
 from unittest.mock import AsyncMock, patch
-from datetime import datetime
+from datetime import datetime, timedelta
 from random import randint, shuffle
 from statistics import mean
 
@@ -12,7 +12,11 @@ from discord.member import Member
 from models.lobby import Lobby
 from plugins.SuperCashBrosLeftForDead.ranker import get_player_ranks
 from plugins.SuperCashBrosLeftForDead.game_data import GameData, Game, Team
-from plugins.SuperCashBrosLeftForDead.plugin import ranked, rank
+from plugins.SuperCashBrosLeftForDead.plugin import leaderboard, ranked, rank
+
+
+def noop(*args, **kwargs):
+    pass
 
 
 def channel(topic: str = "") -> TextChannel:
@@ -37,48 +41,48 @@ def member(id: int) -> Member:
     return member
 
 
-ids = [id for id in range(8)]
-data = []
-for _ in range(5):
+def _add_game(data, ids, date=datetime.today()):
     shuffle(ids)
-    data.append(
-        Game(
-            datetime.today(),
-            Team(ids[4:], randint(1000, 3000)),
-            Team(ids[:4], randint(1000, 3000)),
-        )
-    )
-data = GameData(data)
+    team_one = Team(ids[4:], randint(1000, 3000))
+    team_two = Team(ids[:4], randint(1000, 3000))
+    data.append(Game(date, team_one, team_two))
 
 
-async def game_data(_id, _channel) -> GameData:
-    return data
-
-
-@patch("plugins.SuperCashBrosLeftForDead.game_data.GameData.fetch", game_data)
-@patch("plugins.SuperCashBrosLeftForDead.plugin.draw_composite")
+@patch("plugins.SuperCashBrosLeftForDead.game_data.GameData.fetch")
 class TestSuperCashBrosLeftForDead(AsyncTestCase):
-    async def test_ranked_composite(self, draw_composite):
+    @patch("plugins.SuperCashBrosLeftForDead.plugin.draw_composite")
+    async def test_ranked_composite(self, draw_composite, get_games):
+        draw_composite.return_value = (composit_future := asyncio.Future())
+        composit_future.set_result("assets/coach_small.png")
+
+        games = []
+        get_games.return_value = (game_data_future := asyncio.Future())
+        game_data_future.set_result(GameData(games))
+        ids = [id for id in range(8)]
+        [_add_game(games, ids) for _ in range(5)]
+
         topic = "@SuperCashBrosLeftForDead(history: 'patched')"
         lobby = Lobby(bot(), ctx := channel(topic=topic))
         for id in range(8):
             await lobby.ready(member(id + 1))
 
-        f = asyncio.Future()
-        f.set_result("assets/coach_small.png")
-        draw_composite.return_value = f
-
         await ranked(lobby, ctx)
         assert draw_composite.await_count == 1
 
-    async def test_ranking_order(self, draw_composite):
+    async def test_ranking_order(self, get_games):
+        games = []
+        get_games.return_value = (future := asyncio.Future())
+        future.set_result(GameData(games))
+        ids = [id for id in range(8)]
+        [_add_game(games, ids) for _ in range(5)]
+
         topic = "@SuperCashBrosLeftForDead(history: 'patched')"
         lobby = Lobby(bot(), ctx := channel(topic=topic))
+
         for id in range(8):
             await lobby.ready(member(id))
 
-        data = await game_data("patched", ctx)
-        ranks = get_player_ranks(data)
+        ranks = get_player_ranks(GameData(games))
 
         matches = lobby.get_matches()
         await rank(matches, "patched", ctx)
@@ -91,3 +95,44 @@ class TestSuperCashBrosLeftForDead(AsyncTestCase):
             next_diff = abs(mean_1 - mean_2)
             assert next_diff >= last_diff
             last_diff = next_diff
+
+    async def test_all_ranked_players(self, game_data):
+        games = []
+        game_data.return_value = (future := asyncio.Future())
+        future.set_result(GameData(games))
+
+        topic = "@SuperCashBrosLeftForDead(history: 'patched')"
+        lobby = Lobby(bot(), ctx := channel(topic=topic))
+
+        ids = [id for id in range(8)]
+        long_ago = datetime.now() - timedelta(days=61)
+        [_add_game(games, ids, long_ago) for _ in range(5)]
+
+        await leaderboard(lobby, ctx)
+        assert ctx.send.await_count == 1
+        embed = ctx.send.await_args_list[0].kwargs["embed"]
+        assert len(embed.fields) == 1
+        embed.fields[0].value.startswith("No players in the lobby")
+        ctx.reset_mock()
+
+        _add_game(games, ids)
+        await leaderboard(lobby, ctx)
+        assert ctx.send.await_count == 1
+        embed = ctx.send.await_args_list[0].kwargs["embed"]
+        assert len(embed.fields) == 1
+        embed.fields[0].value.startswith("No players in the lobby")
+        ctx.reset_mock()
+
+        [_add_game(games, ids) for _ in range(4)]
+        await leaderboard(lobby, ctx)
+        assert ctx.send.await_count == 1
+        embed = ctx.send.await_args_list[0].kwargs["embed"]
+        assert len(embed.fields) == 8
+        ctx.reset_mock()
+
+        ids = [id + 8 for id in range(8)]
+        [_add_game(games, ids) for _ in range(5)]
+        await leaderboard(lobby, ctx)
+        assert ctx.send.await_count == 1
+        embed = ctx.send.await_args_list[0].kwargs["embed"]
+        assert len(embed.fields) == 16
