@@ -5,9 +5,18 @@ from discord.ext.commands.core import command
 from models.lobby import Lobby
 from models.config import Config
 from models.player import Player
-from .ranker import get_player_ranks, rank
+from .ranker import (
+    AVERAGE_SCORE,
+    GAME_WEIGHT_HALFLIFE_DAYS,
+    get_player_ranks,
+    rank,
+)
 from .composite import draw_composite
-from .game_data import GameData
+from .game_data import (
+    ACTIVE_PLAYER_DATE_THRESHOLD,
+    ACTIVE_PLAYER_GAMES_THRESHOLD,
+    GameData,
+)
 from utils.directive import directive, parse_multi
 from utils.usage_exception import UsageException
 
@@ -67,24 +76,50 @@ async def leaderboard(lobby, ctx: Context, option: str = None):
     id = lobby.c.pLeft4Dead["history"]
     data = await GameData.fetch(id, lobby.channel)
     scores = get_player_ranks(data)
-    scores = scores.items()
-    scores = sorted(scores, key=lambda item: item[1], reverse=True)
     embed = Embed(colour=Colour.blurple())
     embed.title = "Lobby Rankings"
+
+    def order(item):
+        return item[1]  # by score
+
+    if filter_lobby:
+        players = [p.member.id for p in lobby.players]
+        users = {id: scores.get(id, AVERAGE_SCORE) for id in players}.items()
+        ranks = {id: s for id, s in sorted(users, key=order, reverse=True)}
+    else:
+        user = scores.items()
+        ranks = {id: s for id, s in sorted(user, key=order, reverse=True)}
+
     rank = 1
-    for user_id, score in scores:
+    for user_id in ranks:
         user = lobby.bot.get_user(user_id)
         if user is None:
             continue
 
-        if filter_lobby and Player(user) not in lobby.players:
-            continue
-
+        score = ranks[user_id]
         embed.add_field(name=f"{rank}. {user}", value=score, inline=False)
         rank += 1
 
     if len(embed.fields) == 0:
         text = "No players in the lobby (or channel) have a ranking."
         embed.add_field(name="No players", value=text)
+        await ctx.send(embed=embed)
+        return
+
+    if not filter_lobby:
+        games = ACTIVE_PLAYER_GAMES_THRESHOLD
+        days = ACTIVE_PLAYER_DATE_THRESHOLD.days
+        decay = GAME_WEIGHT_HALFLIFE_DAYS
+        embed.description = (
+            f"Showing active players ({games} games in the past {days} days)"
+            f" ranked against all other active players. Games have a {decay}"
+            " day decay."
+        )
+    else:
+        default = AVERAGE_SCORE
+        embed.description = (
+            "Showing all lobby player ranks.\nNew and inactive players are"
+            f" given the default rank ({default})."
+        )
 
     await ctx.send(embed=embed)

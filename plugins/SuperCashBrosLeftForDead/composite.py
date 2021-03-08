@@ -1,5 +1,13 @@
 import asyncio
 import atexit
+from plugins.SuperCashBrosLeftForDead.game_data import (
+    ACTIVE_PLAYER_DATE_THRESHOLD,
+    ACTIVE_PLAYER_GAMES_THRESHOLD,
+)
+from plugins.SuperCashBrosLeftForDead.ranker import (
+    AVERAGE_SCORE,
+    GAME_WEIGHT_HALFLIFE_DAYS,
+)
 from typing import List
 
 from PIL import Image, ImageDraw, ImageFont
@@ -8,6 +16,7 @@ from models.player import Player
 
 name_font = ImageFont.truetype("assets/AmazMegaGrungeOne.ttf", 16)
 shuffle_font = ImageFont.truetype("assets/AmazMegaGrungeOne.ttf", 36)
+tip_font = ImageFont.truetype("assets/AmazMegaGrungeOne.ttf", 14)
 
 blank = Image.open("assets/lobby.png")
 infected_character = Image.open("assets/infected_small.png")
@@ -36,6 +45,7 @@ async def draw_composite(
     image = blank.copy()
     draw = ImageDraw.Draw(image)
     draw_game_number(draw, game_num)
+    draw_ranking_tip(draw)
 
     ops = []
     for index, player in enumerate(survivors):
@@ -48,7 +58,8 @@ async def draw_composite(
         y_offset = (index + len(survivors)) * ROW_HEIGHT
         ops.append(draw_player(draw, image, player, character, y_offset))
 
-    await asyncio.wait(ops)
+    if len(ops) > 0:
+        await asyncio.wait(ops)
     filename = f"assets/temp/composite-{channel_id}.png"
     image.save(filename)
     return filename
@@ -57,6 +68,21 @@ async def draw_composite(
 def draw_game_number(draw: ImageDraw.Draw, shuffle_num: int) -> None:
     text = f"Match {shuffle_num + 1}"
     draw.text((10, 10), text, font=shuffle_font, fill=(81, 81, 81, 255))
+
+
+def draw_ranking_tip(draw: ImageDraw.Draw) -> None:
+    games = ACTIVE_PLAYER_GAMES_THRESHOLD
+    days = ACTIVE_PLAYER_DATE_THRESHOLD.days
+    line = f"Active players have played {games} games in the past {days} days"
+    draw.text((10, 60), line, font=tip_font, fill=(81, 81, 81, 255))
+
+    decay = GAME_WEIGHT_HALFLIFE_DAYS
+    line = f"Player ranks consider all active players ({decay} day decay)"
+    draw.text((10, 76), line, font=tip_font, fill=(81, 81, 81, 255))
+
+    default_rank = AVERAGE_SCORE
+    line = f"Inactive players are given the default rank ({default_rank})"
+    draw.text((10, 94), line, font=tip_font, fill=(81, 81, 81, 255))
 
 
 async def draw_player(

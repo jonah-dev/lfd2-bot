@@ -31,6 +31,9 @@ async def rank(matches: List[Match], id: str, channel: TextChannel):
 
 
 def get_player_ranks(data: GameData) -> Dict[int, float]:
+    if len(data.get_all_players()) == 0:
+        return dict()
+
     model = LinearRegression().fit(
         __get_training_data(data),
         __get_target_values(data),
