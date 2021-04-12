@@ -1,15 +1,10 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from utils.handle import handle
 from utils.usage_exception import UsageException
 from discord.channel import TextChannel
 from gsheets import Sheets
-from typing import Dict, List, Set
-
-
-# A player is "active" if they play at least
-ACTIVE_PLAYER_GAMES_THRESHOLD = 5  # games in
-ACTIVE_PLAYER_DATE_THRESHOLD = timedelta(days=60)
+from typing import List
 
 
 class Team:
@@ -44,11 +39,8 @@ class Game:
 
 
 class GameData:
-    def __init__(self, games: List[Game]):
-        self.games = games
-
     @staticmethod
-    async def fetch(id: str, channel: TextChannel):
+    async def fetch(id: str, channel: TextChannel) -> List[Game]:
         url = f"https://docs.google.com/spreadsheets/d/{id}"
         try:
             sheets_fetcher = Sheets.from_files(
@@ -71,21 +63,7 @@ class GameData:
                 except BaseException as exception:
                     await handle(None, exception)
 
-            return GameData(games)
+            return games
         except BaseException as exception:
             await handle(None, exception)
             raise UsageException.game_sheet_not_loaded(channel, url)
-
-    def get_all_players(self) -> Set[int]:
-        today = datetime.now()
-        all: Dict[int, int] = dict()  # id => #games
-        for g in self.games:
-            if (today - g.date) > ACTIVE_PLAYER_DATE_THRESHOLD:
-                # Old games are considered for ranking but
-                # only for players who have recently played.
-                continue
-
-            for p in g.team_one.players + g.team_two.players:
-                all[p] = all.get(p, 0) + 1  # counting games
-
-        return set([p for p in all if all[p] >= ACTIVE_PLAYER_GAMES_THRESHOLD])

@@ -1,4 +1,5 @@
 import asyncio
+from plugins.SuperCashBrosLeftForDead.season import Season
 from aiounittest import AsyncTestCase
 from unittest.mock import AsyncMock, patch
 from datetime import datetime, timedelta
@@ -10,8 +11,8 @@ from discord.ext.commands.bot import Bot
 from discord.member import Member
 
 from models.lobby import Lobby
-from plugins.SuperCashBrosLeftForDead.ranker import get_player_ranks
-from plugins.SuperCashBrosLeftForDead.game_data import GameData, Game, Team
+from plugins.SuperCashBrosLeftForDead.ranker import get_ranks
+from plugins.SuperCashBrosLeftForDead.game_data import Game, Team
 from plugins.SuperCashBrosLeftForDead.plugin import leaderboard, ranked, rank
 
 
@@ -57,7 +58,7 @@ class TestSuperCashBrosLeftForDead(AsyncTestCase):
 
         games = []
         get_games.return_value = (game_data_future := asyncio.Future())
-        game_data_future.set_result(GameData(games))
+        game_data_future.set_result(games)
         ids = [id for id in range(8)]
         [_add_game(games, ids) for _ in range(5)]
 
@@ -72,26 +73,33 @@ class TestSuperCashBrosLeftForDead(AsyncTestCase):
     async def test_ranking_order(self, get_games):
         games = []
         get_games.return_value = (future := asyncio.Future())
-        future.set_result(GameData(games))
+        future.set_result(games)
         ids = [id for id in range(8)]
         [_add_game(games, ids) for _ in range(5)]
 
         topic = "@SuperCashBrosLeftForDead(history: 'patched')"
-        lobby = Lobby(bot(), ctx := channel(topic=topic))
+        lobby = Lobby(bot(), channel(topic=topic))
 
         for id in range(8):
             await lobby.ready(member(id))
 
-        ranks = get_player_ranks(GameData(games))
+        inactive_rank = get_ranks(games, Season.all_time())
+        active_rank = get_ranks(games, Season.current())
+
+        def get_player_rank(p) -> int:
+            if active_rank and p in active_rank:
+                return active_rank[p]
+            if p in inactive_rank:
+                return inactive_rank[p]
+            return 2000
 
         matches = lobby.get_matches()
-        await rank(matches, "patched", ctx)
-
+        await rank(matches, get_player_rank)
         last_diff = -1
         for m in matches:
             m = list(m)
-            mean_1 = mean([ranks[p.member.id] for p in list(m[0])])
-            mean_2 = mean([ranks[p.member.id] for p in list(m[1])])
+            mean_1 = mean([get_player_rank(p.member.id) for p in list(m[0])])
+            mean_2 = mean([get_player_rank(p.member.id) for p in list(m[1])])
             next_diff = abs(mean_1 - mean_2)
             assert next_diff >= last_diff
             last_diff = next_diff
@@ -99,7 +107,7 @@ class TestSuperCashBrosLeftForDead(AsyncTestCase):
     async def test_all_ranked_players(self, game_data):
         games = []
         game_data.return_value = (future := asyncio.Future())
-        future.set_result(GameData(games))
+        future.set_result(games)
 
         topic = "@SuperCashBrosLeftForDead(history: 'patched')"
         lobby = Lobby(bot(), ctx := channel(topic=topic))
