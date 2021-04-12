@@ -1,43 +1,36 @@
-from typing import List, Dict
-from discord.channel import TextChannel
+from plugins.SuperCashBrosLeftForDead.season import Season
+from typing import Callable, List, Dict, Set
 from numpy import matrix
 from sklearn.linear_model import LinearRegression
 from statistics import stdev, mean
 
 from utils.verses import Match
 
-from .game_data import GameData
+from .game_data import Game
+
+import plugins.SuperCashBrosLeftForDead.ranking_config as rc
 
 
-GAME_WEIGHT_HALFLIFE_DAYS: int = 60
-AVERAGE_SCORE: int = 2000
-
-
-async def rank(matches: List[Match], id: str, channel: TextChannel):
-    data = await GameData.fetch(id, channel)
-    scores = get_player_ranks(data)
-
+async def rank(matches: List[Match], get_player_rank: Callable):
     def mean_balance(match: Match) -> float:
         (team_one, team_two) = match
-        avg_one = mean(
-            [scores.get(p.member.id, AVERAGE_SCORE) for p in team_one]
-        )
-        avg_two = mean(
-            [scores.get(p.member.id, AVERAGE_SCORE) for p in team_two]
-        )
+        avg_one = mean([get_player_rank(p.member.id) for p in team_one])
+        avg_two = mean([get_player_rank(p.member.id) for p in team_two])
         return abs(avg_one - avg_two)
 
     matches.sort(key=mean_balance)
 
 
-def get_player_ranks(data: GameData) -> Dict[int, float]:
-    if len(data.get_all_players()) == 0:
+def get_ranks(all_games: List[Game], season: Season) -> Dict[int, float]:
+    players = season.get_players(all_games)
+    if len(players) == 0:
         return dict()
 
+    games = season.get_games(all_games)
     model = LinearRegression().fit(
-        __get_training_data(data),
-        __get_target_values(data),
-        __get_weights(data),
+        __get_training_data(players, games),
+        __get_target_values(games),
+        __get_weights(games),
     )
 
     scores = model.coef_[0]
@@ -45,7 +38,7 @@ def get_player_ranks(data: GameData) -> Dict[int, float]:
     std_dev = stdev(scores)
 
     player_scores = {}
-    for i, player in enumerate(data.get_all_players()):
+    for i, player in enumerate(players):
         score = (scores[i] - average) / std_dev
         player_scores[player] = __normalize(score)
     return player_scores
@@ -53,15 +46,13 @@ def get_player_ranks(data: GameData) -> Dict[int, float]:
 
 def __normalize(score: float) -> int:
     score *= 1000
-    score += AVERAGE_SCORE
+    score += rc.AVERAGE_RANK
     return int(score)
 
 
-def __get_training_data(data: GameData) -> matrix:
+def __get_training_data(players: Set[int], games: List[Game]) -> matrix:
     game_rows = []
-    players = data.get_all_players()
-
-    for game in data.games:
+    for game in games:
         player_cols = []
         for player in players:
             player_cols.append(game.get_player_team_modifier(player))
@@ -70,21 +61,21 @@ def __get_training_data(data: GameData) -> matrix:
     return matrix(game_rows)
 
 
-def __get_target_values(data: GameData) -> matrix:
-    return matrix([[g.get_percent_difference()] for g in data.games])
+def __get_target_values(games: List[Game]) -> matrix:
+    return matrix([[g.get_percent_difference()] for g in games])
 
 
-def __get_weights(data: GameData) -> matrix:
-    decay_weights = __get_decay_weights(data)
-    game_points = [g.team_one.score + g.team_two.score for g in data.games]
+def __get_weights(games: List[Game]) -> matrix:
+    decay_weights = __get_decay_weights(games)
+    game_points = [g.team_one.score + g.team_two.score for g in games]
     return [
         decay * points for decay, points in zip(decay_weights, game_points)
     ]
 
 
-def __get_decay_weights(data: GameData) -> matrix:
-    newest = max([g.date for g in data.games])
+def __get_decay_weights(games: List[Game]) -> matrix:
+    newest = max([g.date for g in games])
     return [
-        0.5 ** ((newest - g.date).days / GAME_WEIGHT_HALFLIFE_DAYS)
-        for g in data.games
+        0.5 ** ((newest - g.date).days / rc.GAME_WEIGHT_HALFLIFE_DAYS)
+        for g in games
     ]

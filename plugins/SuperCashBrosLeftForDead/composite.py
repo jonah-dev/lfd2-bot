@@ -1,13 +1,6 @@
 import asyncio
 import atexit
-from plugins.SuperCashBrosLeftForDead.game_data import (
-    ACTIVE_PLAYER_DATE_THRESHOLD,
-    ACTIVE_PLAYER_GAMES_THRESHOLD,
-)
-from plugins.SuperCashBrosLeftForDead.ranker import (
-    AVERAGE_SCORE,
-    GAME_WEIGHT_HALFLIFE_DAYS,
-)
+import plugins.SuperCashBrosLeftForDead.ranking_config as rc
 from typing import List
 
 from PIL import Image, ImageDraw, ImageFont
@@ -45,7 +38,7 @@ async def draw_composite(
     image = blank.copy()
     draw = ImageDraw.Draw(image)
     draw_game_number(draw, game_num)
-    draw_ranking_tip(draw)
+    rc.USE_ROLLING_SEASON and draw_season_info(draw)
 
     ops = []
     for index, player in enumerate(survivors):
@@ -70,18 +63,14 @@ def draw_game_number(draw: ImageDraw.Draw, shuffle_num: int) -> None:
     draw.text((10, 10), text, font=shuffle_font, fill=(81, 81, 81, 255))
 
 
-def draw_ranking_tip(draw: ImageDraw.Draw) -> None:
-    games = ACTIVE_PLAYER_GAMES_THRESHOLD
-    days = ACTIVE_PLAYER_DATE_THRESHOLD.days
-    line = f"Active players have played {games} games in the past {days} days"
+def draw_season_info(draw: ImageDraw.Draw) -> None:
+    line = f"Ranking considers all games in the past {rc.LENGTH_DAYS} days"
     draw.text((10, 60), line, font=tip_font, fill=(81, 81, 81, 255))
 
-    decay = GAME_WEIGHT_HALFLIFE_DAYS
-    line = f"Player ranks consider all active players ({decay} day decay)"
+    line = f"You must play {rc.PLACEMENT_GAMES} in this time to be ranked"
     draw.text((10, 76), line, font=tip_font, fill=(81, 81, 81, 255))
 
-    default_rank = AVERAGE_SCORE
-    line = f"Inactive players are given the default rank ({default_rank})"
+    line = "New and unranked players will be ranked using all available data"
     draw.text((10, 94), line, font=tip_font, fill=(81, 81, 81, 255))
 
 

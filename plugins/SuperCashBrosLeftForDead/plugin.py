@@ -1,24 +1,17 @@
+from plugins.SuperCashBrosLeftForDead.season import Season
 from discord import Colour, Embed, File
 from discord.ext.commands.context import Context
 from discord.ext.commands.core import command
 
 from models.lobby import Lobby
 from models.config import Config
-from models.player import Player
-from .ranker import (
-    AVERAGE_SCORE,
-    GAME_WEIGHT_HALFLIFE_DAYS,
-    get_player_ranks,
-    rank,
-)
+from .ranker import get_ranks, rank
 from .composite import draw_composite
-from .game_data import (
-    ACTIVE_PLAYER_DATE_THRESHOLD,
-    ACTIVE_PLAYER_GAMES_THRESHOLD,
-    GameData,
-)
+from .game_data import GameData
 from utils.directive import directive, parse_multi
 from utils.usage_exception import UsageException
+
+import plugins.SuperCashBrosLeftForDead.ranking_config as rc
 
 
 @directive
@@ -55,7 +48,20 @@ async def ranked(lobby: "Lobby", ctx: Context):
     if __name__ not in lobby._cache:
         id = lobby.c.pLeft4Dead["history"]
         matches = lobby.get_matches()
-        await rank(matches, id, lobby.channel)
+        data = await GameData.fetch(id, lobby.channel)
+        inactive_rank = get_ranks(data, Season.all_time())
+        if rc.USE_ROLLING_SEASON:
+            season = Season(rc.LENGTH_DAYS, rc.PLACEMENT_GAMES)
+            active_rank = get_ranks(data, season)
+
+        def get_player_rank(p) -> int:
+            if active_rank and p in active_rank:
+                return active_rank[p]
+            if p in inactive_rank:
+                return inactive_rank[p]
+            return rc.AVERAGE_RANK
+
+        await rank(matches, get_player_rank)
         lobby._cache[__name__] = iter(enumerate(matches))
 
     next_match = next(lobby._cache[__name__], None)
@@ -74,17 +80,18 @@ async def leaderboard(lobby, ctx: Context, option: str = None):
     """See player ranks"""
     filter_lobby = option == "lobby"
     id = lobby.c.pLeft4Dead["history"]
-    data = await GameData.fetch(id, lobby.channel)
-    scores = get_player_ranks(data)
+    all_games = await GameData.fetch(id, lobby.channel)
+    season = Season.current() if rc.USE_ROLLING_SEASON else Season.all_time()
+    scores = get_ranks(all_games, season)
     embed = Embed(colour=Colour.blurple())
-    embed.title = "Lobby Rankings"
+    embed.title = "Lobby Rankings" if filter_lobby else "Player Rankings"
 
     def order(item):
-        return item[1]  # by score
+        return item[1] or 0  # by score
 
     if filter_lobby:
         players = [p.member.id for p in lobby.players]
-        users = {id: scores.get(id, AVERAGE_SCORE) for id in players}.items()
+        users = {id: scores.get(id) for id in players}.items()
         ranks = {id: s for id, s in sorted(users, key=order, reverse=True)}
     else:
         user = scores.items()
@@ -96,7 +103,7 @@ async def leaderboard(lobby, ctx: Context, option: str = None):
         if user is None:
             continue
 
-        score = ranks[user_id]
+        score = ranks.get(user_id, "(unranked)")
         embed.add_field(name=f"{rank}. {user}", value=score, inline=False)
         rank += 1
 
@@ -106,20 +113,12 @@ async def leaderboard(lobby, ctx: Context, option: str = None):
         await ctx.send(embed=embed)
         return
 
-    if not filter_lobby:
-        games = ACTIVE_PLAYER_GAMES_THRESHOLD
-        days = ACTIVE_PLAYER_DATE_THRESHOLD.days
-        decay = GAME_WEIGHT_HALFLIFE_DAYS
+    if rc.USE_ROLLING_SEASON:
         embed.description = (
-            f"Showing active players ({games} games in the past {days} days)"
-            f" ranked against all other active players. Games have a {decay}"
-            " day decay."
-        )
-    else:
-        default = AVERAGE_SCORE
-        embed.description = (
-            "Showing all lobby player ranks.\nNew and inactive players are"
-            f" given the default rank ({default})."
+            f"Ranking considers all games in the past {rc.LENGTH_DAYS} days."
+            f" You must play {rc.PLACEMENT_GAMES} in this time to be ranked."
+            " New and unranked players will be ranked using all available"
+            f" data or get the median rank of {rc.AVERAGE_RANK}."
         )
 
     await ctx.send(embed=embed)
