@@ -1,11 +1,16 @@
+from statistics import mean
+from models.lobby import Lobby
+from typing import Set
 from plugins.SuperCashBrosLeftForDead.season import Season
 from models.player import Player
-from plugins.SuperCashBrosLeftForDead.ranker import get_ranks
+from plugins.SuperCashBrosLeftForDead.ranker import get_ranks, rank
 from plugins.SuperCashBrosLeftForDead.game_data import GameData
 from discord.ext.commands import Bot
 from unittest.mock import AsyncMock
 from aiounittest.case import AsyncTestCase
 from discord import Member, TextChannel
+
+import plugins.SuperCashBrosLeftForDead.ranking_config as rc
 
 SHEETS = "1886KNfDRp-RGRnRkAbb8IQHTvQFHw_xcavz_2pXmIsg"
 
@@ -39,17 +44,65 @@ def real_member(name: str, id: int) -> Member:
     return member
 
 
+def lobby(*names: Set[str]) -> Lobby:
+    topic = f"@SuperCashBrosLeftForDead(history: {SHEETS})"
+    lobby = Lobby(bot(), channel(topic))
+    lobby.players = [Player(real_member(name, IDS[name])) for name in names]
+    [p.set_ready() for p in lobby.players]
+    return lobby
+
+
 class TestBench(AsyncTestCase):
     async def test_print_season_ranks(self):
         players = [Player(real_member(PEOPLE[id], id)) for id in PEOPLE]
-        games = await GameData.fetch(
-            "1886KNfDRp-RGRnRkAbb8IQHTvQFHw_xcavz_2pXmIsg", channel()
-        )
+        games = await GameData.fetch(SHEETS, channel())
 
         ranks = get_ranks(games, Season.current())
         players.sort(key=lambda p: ranks.get(p.member.id, 0), reverse=True)
         for i, p in enumerate(players):
-            print(f"{i}.) [{ranks.get(p.member.id, None)}] {p.get_name()}")
+            print(f"{i+1}.) [{ranks.get(p.member.id, None)}] {p.get_name()}")
+
+    async def test_print_matches(self):
+        players = lobby(
+            "Anton",
+            "Ben",
+            "Jonah",
+            "Pat",
+            "Maddy",
+            "Christian",
+            "Joe G",
+            "Dan",
+        )
+        matches = players.get_matches()
+        games = await GameData.fetch(SHEETS, channel())
+        inactive_rank = get_ranks(games, Season.all_time())
+        active_rank = get_ranks(games, Season.current())
+
+        def get_rank(p) -> int:
+            p = p.member.id if isinstance(p, Player) else p
+
+            if p in active_rank:
+                return active_rank[p]
+            if p in inactive_rank:
+                return inactive_rank[p]
+            return rc.AVERAGE_RANK
+
+        await rank(matches, get_rank)
+        format_row = (
+            "{:>3}.)"
+            " {:^14}{:^14}{:^14}{:^14}{:>5}"
+            " vs {:<5}{:^14}{:^14}{:^14}{:^14}"
+        )
+        for i, m in enumerate(matches):
+            row = [i + 1]
+            m = list(m)
+            for p in list(m[0]):
+                row.append(f"{p.get_name()}:{get_rank(p)}")
+            row.append(int(mean([get_rank(p) for p in list(m[0])])))
+            row.append(int(mean([get_rank(p) for p in list(m[1])])))
+            for p in list(m[1]):
+                row.append(f"{p.get_name()}:{get_rank(p)}")
+            print(format_row.format(*row))
 
 
 PEOPLE = {
@@ -87,3 +140,5 @@ PEOPLE = {
     280492678137905152: "Casey D",
     151856271287386112: "Jake",
 }
+
+IDS = {v: k for k, v in PEOPLE.items()}
