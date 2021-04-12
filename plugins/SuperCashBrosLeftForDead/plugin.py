@@ -116,9 +116,10 @@ async def leaderboard(lobby, ctx: Context, option: str = None):
     if rc.USE_ROLLING_SEASON:
         embed.description = (
             f"Ranking considers all games in the past {rc.LENGTH_DAYS} days."
-            f" You must play {rc.PLACEMENT_GAMES} in this time to be ranked."
-            " New and unranked players will be ranked using all available"
-            f" data or get the median rank of {rc.AVERAGE_RANK}."
+            f" You must play {rc.PLACEMENT_GAMES} games in this time to be"
+            " ranked. Matchmaking for new and unranked players will use all"
+            " available data to estimate the player's rank or use the median"
+            f" rank of {rc.AVERAGE_RANK}."
         )
 
     await ctx.send(embed=embed)
