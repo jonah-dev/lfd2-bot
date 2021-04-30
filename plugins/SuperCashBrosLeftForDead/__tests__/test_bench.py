@@ -1,3 +1,4 @@
+from plugins.SuperCashBrosLeftForDead.plugin import ranked
 from statistics import mean
 from models.lobby import Lobby
 from typing import Set
@@ -53,6 +54,21 @@ def lobby(*names: Set[str]) -> Lobby:
 
 
 class TestBench(AsyncTestCase):
+    async def test_draw_composite(self):
+        await ranked(
+            lobby(
+                "Anton",
+                "Ben",
+                "Jonah",
+                "Joe D",
+                "Jack",
+                "Zaruba",
+                "Pat",
+                "Maddy",
+            ),
+            channel(),
+        )
+
     async def test_print_season_ranks(self):
         players = [Player(real_member(PEOPLE[id], id)) for id in PEOPLE]
         games = await GameData.fetch(SHEETS, channel())

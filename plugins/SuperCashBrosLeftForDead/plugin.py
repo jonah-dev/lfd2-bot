@@ -54,7 +54,7 @@ async def ranked(lobby: "Lobby", ctx: Context):
             season = Season(rc.LENGTH_DAYS, rc.PLACEMENT_GAMES)
             active_rank = get_ranks(data, season)
 
-        def get_player_rank(p) -> int:
+        def get_player_rank(p: int) -> int:
             if active_rank and p in active_rank:
                 return active_rank[p]
             if p in inactive_rank:
@@ -63,6 +63,7 @@ async def ranked(lobby: "Lobby", ctx: Context):
 
         await rank(matches, get_player_rank)
         lobby._cache[__name__] = iter(enumerate(matches))
+        lobby._cache[f"{__name__}-get_rank"] = get_player_rank
 
     next_match = next(lobby._cache[__name__], None)
     if next_match is None:
@@ -71,7 +72,9 @@ async def ranked(lobby: "Lobby", ctx: Context):
     i, teams = next_match
     teams = list(teams)
     team1, team2 = list(teams)[0], list(teams[1])
-    composite = await draw_composite(i, team1, team2, lobby.channel.id)
+    channel = lobby.channel.id
+    get_rank = lobby._cache[f"{__name__}-get_rank"]
+    composite = await draw_composite(i, team1, team2, channel, get_rank)
     await ctx.send(file=File(composite))
 
 
