@@ -1,7 +1,7 @@
 import asyncio
 import atexit
 import plugins.SuperCashBrosLeftForDead.ranking_config as rc
-from typing import List
+from typing import Callable, List
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -25,6 +25,11 @@ not_ready = Image.open("assets/not_ready.png")
 voice_on = Image.open("assets/voice_on.png")
 voice_off = Image.open("assets/voice_off.png")
 
+diamond = Image.open("assets/diamond.png")
+gold = Image.open("assets/gold.png")
+silver = Image.open("assets/silver.png")
+bronze = Image.open("assets/bronze.png")
+
 PLAYER_ONE_START = 169
 ROW_HEIGHT = 42
 
@@ -34,6 +39,7 @@ async def draw_composite(
     survivors: List[Player],
     infected: List[Player],
     channel_id: int,
+    get_rank: Callable[[int], int],
 ) -> str:
     image = blank.copy()
     draw = ImageDraw.Draw(image)
@@ -43,13 +49,15 @@ async def draw_composite(
     ops = []
     for index, player in enumerate(survivors):
         character = survivor_characters[index]
+        rank = get_rank_image(get_rank(player.member.id))
         y_offset = index * ROW_HEIGHT
-        ops.append(draw_player(draw, image, player, character, y_offset))
+        ops.append(draw_player(draw, image, player, character, rank, y_offset))
 
     character = infected_character
     for index, player in enumerate(infected):
         y_offset = (index + len(survivors)) * ROW_HEIGHT
-        ops.append(draw_player(draw, image, player, character, y_offset))
+        rank = get_rank_image(get_rank(player.member.id))
+        ops.append(draw_player(draw, image, player, character, rank, y_offset))
 
     if len(ops) > 0:
         await asyncio.wait(ops)
@@ -65,7 +73,7 @@ def draw_game_number(draw: ImageDraw.Draw, shuffle_num: int) -> None:
 
 def draw_season_info(draw: ImageDraw.Draw) -> None:
     line = f"Ranking considers all games in the past {rc.LENGTH_DAYS} days"
-    draw.text((10, 60), line, font=tip_font, fill=(81, 81, 81, 255))
+    draw.text((14, 60), line, font=tip_font, fill=(81, 81, 81, 255))
 
     line = f"You must play {rc.PLACEMENT_GAMES} in this time to be ranked"
     draw.text((10, 76), line, font=tip_font, fill=(81, 81, 81, 255))
@@ -79,23 +87,44 @@ async def draw_player(
     composite: Image,
     player: Player,
     character: Image,
+    rank: Image,
     y_offset: int,
 ) -> None:
-    profile = await player.get_avatar()
+
     ready = is_ready if player.is_ready() else not_ready
     voice = voice_on if player.is_in_voice() else voice_off
 
     y_offset += PLAYER_ONE_START
+    composite.paste(rank, (88, y_offset), rank)
     composite.paste(ready, (132, y_offset + 11), ready)
     composite.paste(voice, (155, y_offset + 5), voice)
     composite.paste(character, (183, y_offset))
-    composite.paste(profile.resize((19, 19)), (226, y_offset + 8))
+
+    try:
+        profile = await player.get_avatar()
+        composite.paste(profile.resize((19, 19)), (226, y_offset + 8))
+    except Exception:
+        pass
+
     draw.text(
         (255, y_offset + 11),
         player.get_name(),
         font=name_font,
         fill=(81, 81, 81, 255),
     )
+
+
+def get_rank_image(rank):
+    if rank is None:
+        return None
+    elif rank > 3800:
+        return diamond
+    elif rank > 2800:
+        return gold
+    elif rank > 1800:
+        return silver
+    else:
+        return bronze
 
 
 @atexit.register
